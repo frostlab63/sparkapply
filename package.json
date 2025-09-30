@@ -1,0 +1,28 @@
+{
+  "name": "sparkapply",
+  "version": "1.0.0",
+  "description": "AI-powered job application platform with swipe-based discovery",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "pnpm run --parallel dev",
+    "build": "pnpm run --recursive build",
+    "test": "pnpm run --recursive test",
+    "lint": "pnpm run --recursive lint",
+    "clean": "pnpm run --recursive clean && rm -rf node_modules",
+    "setup": "pnpm install && pnpm run --recursive setup"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "prettier": "^3.0.0",
+    "eslint": "^8.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@8.15.0"
+}
