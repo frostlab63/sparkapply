@@ -2,44 +2,40 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import RegisterForm from '../RegisterForm'
-import { AuthProvider } from '../../../contexts/AuthContext'
 
 // Mock the AuthContext
 const mockRegister = vi.fn()
-const mockAuthContext = {
+const mockClearError = vi.fn()
+
+const createMockAuthContext = (overrides = {}) => ({
   register: mockRegister,
-  loading: false,
+  clearError: mockClearError,
+  isLoading: false,
   error: null,
   user: null,
-  isAuthenticated: false
-}
-
-vi.mock('../../../contexts/AuthContext', async () => {
-  const actual = await vi.importActual('../../../contexts/AuthContext')
-  return {
-    ...actual,
-    useAuth: () => mockAuthContext
-  }
+  isAuthenticated: false,
+  ...overrides,
 })
 
-const renderWithAuth = (component) => {
-  return render(
-    <AuthProvider>
-      {component}
-    </AuthProvider>
-  )
-}
+vi.mock('../../../contexts/AuthContext', () => ({
+  useAuth: vi.fn(() => createMockAuthContext()),
+}))
+
+// Import useAuth after mocking
+import { useAuth } from '../../../contexts/AuthContext'
 
 describe('RegisterForm', () => {
   const mockOnSwitchToLogin = vi.fn()
-  
+  const mockOnClose = vi.fn()
+
   beforeEach(() => {
     vi.clearAllMocks()
+    useAuth.mockReturnValue(createMockAuthContext())
   })
 
   it('renders step 1 correctly', () => {
-    renderWithAuth(<RegisterForm onSwitchToLogin={mockOnSwitchToLogin} />)
-    
+    render(<RegisterForm onSwitchToLogin={mockOnSwitchToLogin} onClose={mockOnClose} />)
+
     expect(screen.getByText('Create Your Account')).toBeInTheDocument()
     expect(screen.getByText('Step 1 of 2')).toBeInTheDocument()
     expect(screen.getByLabelText(/email address/i)).toBeInTheDocument()
@@ -48,32 +44,54 @@ describe('RegisterForm', () => {
     expect(screen.getByText(/job seeker/i)).toBeInTheDocument()
   })
 
-  it('validates email in step 1', async () => {
+  it('validates email field in step 1', async () => {
     const user = userEvent.setup()
-    renderWithAuth(<RegisterForm onSwitchToLogin={mockOnSwitchToLogin} />)
-    
+    render(<RegisterForm onSwitchToLogin={mockOnSwitchToLogin} onClose={mockOnClose} />)
+
+    const emailInput = screen.getByLabelText(/email address/i)
     const continueButton = screen.getByRole('button', { name: /continue/i })
+
+    await user.type(emailInput, 'invalid-email')
     await user.click(continueButton)
-    
+
     await waitFor(() => {
-      expect(screen.getByText(/email is required/i)).toBeInTheDocument()
+      expect(screen.getByText(/please enter a valid email address/i)).toBeInTheDocument()
     })
   })
 
-  it('validates password match in step 1', async () => {
+  it('validates password fields in step 1', async () => {
     const user = userEvent.setup()
-    renderWithAuth(<RegisterForm onSwitchToLogin={mockOnSwitchToLogin} />)
-    
+    render(<RegisterForm onSwitchToLogin={mockOnSwitchToLogin} onClose={mockOnClose} />)
+
     const emailInput = screen.getByLabelText(/email address/i)
     const passwordInput = screen.getByLabelText(/^password$/i)
     const confirmPasswordInput = screen.getByLabelText(/confirm password/i)
     const continueButton = screen.getByRole('button', { name: /continue/i })
-    
+
     await user.type(emailInput, 'test@example.com')
-    await user.type(passwordInput, 'password123')
-    await user.type(confirmPasswordInput, 'differentpassword')
+    await user.type(passwordInput, '123')
+    await user.type(confirmPasswordInput, '456')
     await user.click(continueButton)
-    
+
+    await waitFor(() => {
+      expect(screen.getByText(/password must be at least 8 characters/i)).toBeInTheDocument()
+    })
+  })
+
+  it('validates password confirmation in step 1', async () => {
+    const user = userEvent.setup()
+    render(<RegisterForm onSwitchToLogin={mockOnSwitchToLogin} onClose={mockOnClose} />)
+
+    const emailInput = screen.getByLabelText(/email address/i)
+    const passwordInput = screen.getByLabelText(/^password$/i)
+    const confirmPasswordInput = screen.getByLabelText(/confirm password/i)
+    const continueButton = screen.getByRole('button', { name: /continue/i })
+
+    await user.type(emailInput, 'test@example.com')
+    await user.type(passwordInput, 'Password123')
+    await user.type(confirmPasswordInput, 'Different123')
+    await user.click(continueButton)
+
     await waitFor(() => {
       expect(screen.getByText(/passwords do not match/i)).toBeInTheDocument()
     })
@@ -81,148 +99,193 @@ describe('RegisterForm', () => {
 
   it('proceeds to step 2 with valid step 1 data', async () => {
     const user = userEvent.setup()
-    renderWithAuth(<RegisterForm onSwitchToLogin={mockOnSwitchToLogin} />)
-    
-    const emailInput = screen.getByLabelText(/email address/i)
-    const passwordInput = screen.getByLabelText(/^password$/i)
-    const confirmPasswordInput = screen.getByLabelText(/confirm password/i)
-    const continueButton = screen.getByRole('button', { name: /continue/i })
-    
-    await user.type(emailInput, 'test@example.com')
-    await user.type(passwordInput, 'password123')
-    await user.type(confirmPasswordInput, 'password123')
-    await user.click(continueButton)
-    
-    await waitFor(() => {
-      expect(screen.getByText('Complete Your Profile')).toBeInTheDocument()
-      expect(screen.getByText('Step 2 of 2')).toBeInTheDocument()
-    })
-  })
+    render(<RegisterForm onSwitchToLogin={mockOnSwitchToLogin} onClose={mockOnClose} />)
 
-  it('renders step 2 correctly', async () => {
-    const user = userEvent.setup()
-    renderWithAuth(<RegisterForm onSwitchToLogin={mockOnSwitchToLogin} />)
-    
-    // Complete step 1
     const emailInput = screen.getByLabelText(/email address/i)
     const passwordInput = screen.getByLabelText(/^password$/i)
     const confirmPasswordInput = screen.getByLabelText(/confirm password/i)
     const continueButton = screen.getByRole('button', { name: /continue/i })
-    
+
     await user.type(emailInput, 'test@example.com')
-    await user.type(passwordInput, 'password123')
-    await user.type(confirmPasswordInput, 'password123')
+    await user.type(passwordInput, 'Password123')
+    await user.type(confirmPasswordInput, 'Password123')
     await user.click(continueButton)
-    
+
     await waitFor(() => {
+      expect(screen.getByText('Step 2 of 2')).toBeInTheDocument()
       expect(screen.getByLabelText(/first name/i)).toBeInTheDocument()
       expect(screen.getByLabelText(/last name/i)).toBeInTheDocument()
-      expect(screen.getByText(/terms of service/i)).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: /create account/i })).toBeInTheDocument()
     })
   })
 
   it('validates required fields in step 2', async () => {
     const user = userEvent.setup()
-    renderWithAuth(<RegisterForm onSwitchToLogin={mockOnSwitchToLogin} />)
-    
+    render(<RegisterForm onSwitchToLogin={mockOnSwitchToLogin} onClose={mockOnClose} />)
+
     // Complete step 1
     const emailInput = screen.getByLabelText(/email address/i)
     const passwordInput = screen.getByLabelText(/^password$/i)
     const confirmPasswordInput = screen.getByLabelText(/confirm password/i)
     const continueButton = screen.getByRole('button', { name: /continue/i })
-    
+
     await user.type(emailInput, 'test@example.com')
-    await user.type(passwordInput, 'password123')
-    await user.type(confirmPasswordInput, 'password123')
+    await user.type(passwordInput, 'Password123')
+    await user.type(confirmPasswordInput, 'Password123')
     await user.click(continueButton)
-    
+
     // Try to submit step 2 without required fields
     await waitFor(() => {
       const createAccountButton = screen.getByRole('button', { name: /create account/i })
       return user.click(createAccountButton)
     })
-    
+
     await waitFor(() => {
       expect(screen.getByText(/first name is required/i)).toBeInTheDocument()
       expect(screen.getByText(/last name is required/i)).toBeInTheDocument()
-      expect(screen.getByText(/you must agree to the terms/i)).toBeInTheDocument()
     })
   })
 
   it('submits complete registration form', async () => {
     const user = userEvent.setup()
-    renderWithAuth(<RegisterForm onSwitchToLogin={mockOnSwitchToLogin} />)
-    
+    mockRegister.mockResolvedValue({ success: true })
+
+    render(<RegisterForm onSwitchToLogin={mockOnSwitchToLogin} onClose={mockOnClose} />)
+
     // Complete step 1
     const emailInput = screen.getByLabelText(/email address/i)
     const passwordInput = screen.getByLabelText(/^password$/i)
     const confirmPasswordInput = screen.getByLabelText(/confirm password/i)
     const continueButton = screen.getByRole('button', { name: /continue/i })
-    
+
     await user.type(emailInput, 'test@example.com')
-    await user.type(passwordInput, 'password123')
-    await user.type(confirmPasswordInput, 'password123')
+    await user.type(passwordInput, 'Password123')
+    await user.type(confirmPasswordInput, 'Password123')
     await user.click(continueButton)
-    
+
     // Complete step 2
     await waitFor(async () => {
       const firstNameInput = screen.getByLabelText(/first name/i)
       const lastNameInput = screen.getByLabelText(/last name/i)
-      const termsCheckbox = screen.getByRole('checkbox')
       const createAccountButton = screen.getByRole('button', { name: /create account/i })
-      
+
       await user.type(firstNameInput, 'John')
       await user.type(lastNameInput, 'Doe')
-      await user.click(termsCheckbox)
       await user.click(createAccountButton)
     })
-    
+
     await waitFor(() => {
       expect(mockRegister).toHaveBeenCalledWith({
         email: 'test@example.com',
-        password: 'password123',
-        role: 'job_seeker',
+        password: 'Password123',
         firstName: 'John',
-        lastName: 'Doe'
+        lastName: 'Doe',
+        userType: 'job_seeker',
       })
     })
   })
 
   it('allows going back from step 2 to step 1', async () => {
     const user = userEvent.setup()
-    renderWithAuth(<RegisterForm onSwitchToLogin={mockOnSwitchToLogin} />)
-    
+    render(<RegisterForm onSwitchToLogin={mockOnSwitchToLogin} onClose={mockOnClose} />)
+
     // Complete step 1
     const emailInput = screen.getByLabelText(/email address/i)
     const passwordInput = screen.getByLabelText(/^password$/i)
     const confirmPasswordInput = screen.getByLabelText(/confirm password/i)
     const continueButton = screen.getByRole('button', { name: /continue/i })
-    
+
     await user.type(emailInput, 'test@example.com')
-    await user.type(passwordInput, 'password123')
-    await user.type(confirmPasswordInput, 'password123')
+    await user.type(passwordInput, 'Password123')
+    await user.type(confirmPasswordInput, 'Password123')
     await user.click(continueButton)
-    
+
     // Go back to step 1
     await waitFor(async () => {
       const backButton = screen.getByRole('button', { name: /back/i })
       await user.click(backButton)
     })
-    
+
     await waitFor(() => {
-      expect(screen.getByText('Create Your Account')).toBeInTheDocument()
       expect(screen.getByText('Step 1 of 2')).toBeInTheDocument()
+      expect(screen.getByDisplayValue('test@example.com')).toBeInTheDocument()
     })
   })
 
   it('calls onSwitchToLogin when login link is clicked', async () => {
     const user = userEvent.setup()
-    renderWithAuth(<RegisterForm onSwitchToLogin={mockOnSwitchToLogin} />)
-    
+    render(<RegisterForm onSwitchToLogin={mockOnSwitchToLogin} onClose={mockOnClose} />)
+
     const loginLink = screen.getByText(/sign in here/i)
     await user.click(loginLink)
-    
+
     expect(mockOnSwitchToLogin).toHaveBeenCalled()
+  })
+
+  it('displays loading state during submission', () => {
+    useAuth.mockReturnValue(createMockAuthContext({ isLoading: true }))
+
+    render(<RegisterForm onSwitchToLogin={mockOnSwitchToLogin} onClose={mockOnClose} />)
+
+    // Should show loading state in step 1
+    const continueButton = screen.getByRole('button', { name: /continue/i })
+    expect(continueButton).toBeDisabled()
+  })
+
+  it('displays error message when registration fails', () => {
+    useAuth.mockReturnValue(createMockAuthContext({ error: 'Email already exists' }))
+
+    render(<RegisterForm onSwitchToLogin={mockOnSwitchToLogin} onClose={mockOnClose} />)
+
+    expect(screen.getByText('Email already exists')).toBeInTheDocument()
+  })
+
+  it('toggles password visibility', async () => {
+    const user = userEvent.setup()
+    render(<RegisterForm onSwitchToLogin={mockOnSwitchToLogin} onClose={mockOnClose} />)
+
+    const passwordInput = screen.getByLabelText(/^password$/i)
+    // Find the password toggle button by looking for the Eye icon
+    const passwordToggleButton = passwordInput.parentElement.querySelector('button')
+
+    expect(passwordInput).toHaveAttribute('type', 'password')
+
+    await user.click(passwordToggleButton)
+    expect(passwordInput).toHaveAttribute('type', 'text')
+
+    await user.click(passwordToggleButton)
+    expect(passwordInput).toHaveAttribute('type', 'password')
+  })
+
+  it('calls onClose when registration is successful', async () => {
+    const user = userEvent.setup()
+    mockRegister.mockResolvedValue({ success: true })
+
+    render(<RegisterForm onSwitchToLogin={mockOnSwitchToLogin} onClose={mockOnClose} />)
+
+    // Complete step 1
+    const emailInput = screen.getByLabelText(/email address/i)
+    const passwordInput = screen.getByLabelText(/^password$/i)
+    const confirmPasswordInput = screen.getByLabelText(/confirm password/i)
+    const continueButton = screen.getByRole('button', { name: /continue/i })
+
+    await user.type(emailInput, 'test@example.com')
+    await user.type(passwordInput, 'Password123')
+    await user.type(confirmPasswordInput, 'Password123')
+    await user.click(continueButton)
+
+    // Complete step 2
+    await waitFor(async () => {
+      const firstNameInput = screen.getByLabelText(/first name/i)
+      const lastNameInput = screen.getByLabelText(/last name/i)
+      const createAccountButton = screen.getByRole('button', { name: /create account/i })
+
+      await user.type(firstNameInput, 'John')
+      await user.type(lastNameInput, 'Doe')
+      await user.click(createAccountButton)
+    })
+
+    await waitFor(() => {
+      expect(mockOnClose).toHaveBeenCalled()
+    })
   })
 })

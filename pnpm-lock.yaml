@@ -216,6 +216,9 @@ importers:
       jsdom:
         specifier: ^22.1.0
         version: 22.1.0
+      prettier:
+        specifier: ^3.0.0
+        version: 3.6.2
       tw-animate-css:
         specifier: ^1.2.9
         version: 1.4.0

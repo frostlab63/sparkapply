@@ -14,7 +14,7 @@ const AUTH_ACTIONS = {
   REGISTER_FAILURE: 'REGISTER_FAILURE',
   UPDATE_PROFILE: 'UPDATE_PROFILE',
   SET_LOADING: 'SET_LOADING',
-  CLEAR_ERROR: 'CLEAR_ERROR'
+  CLEAR_ERROR: 'CLEAR_ERROR',
 }
 
 // Initial State
@@ -25,7 +25,7 @@ const initialState = {
   isAuthenticated: false,
   isLoading: false,
   error: null,
-  profileCompletion: 0
+  profileCompletion: 0,
 }
 
 // Auth Reducer
@@ -36,9 +36,9 @@ const authReducer = (state, action) => {
       return {
         ...state,
         isLoading: true,
-        error: null
+        error: null,
       }
-    
+
     case AUTH_ACTIONS.LOGIN_SUCCESS:
     case AUTH_ACTIONS.REGISTER_SUCCESS:
       return {
@@ -49,9 +49,9 @@ const authReducer = (state, action) => {
         isAuthenticated: true,
         isLoading: false,
         error: null,
-        profileCompletion: action.payload.user?.profile_completion || 0
+        profileCompletion: action.payload.user?.profile_completion || 0,
       }
-    
+
     case AUTH_ACTIONS.LOGIN_FAILURE:
     case AUTH_ACTIONS.REGISTER_FAILURE:
       return {
@@ -61,36 +61,36 @@ const authReducer = (state, action) => {
         refreshToken: null,
         isAuthenticated: false,
         isLoading: false,
-        error: action.payload
+        error: action.payload,
       }
-    
+
     case AUTH_ACTIONS.LOGOUT:
       return {
-        ...initialState
+        ...initialState,
       }
-    
+
     case AUTH_ACTIONS.UPDATE_PROFILE:
       return {
         ...state,
         user: {
           ...state.user,
-          ...action.payload
+          ...action.payload,
         },
-        profileCompletion: action.payload.profile_completion || state.profileCompletion
+        profileCompletion: action.payload.profile_completion || state.profileCompletion,
       }
-    
+
     case AUTH_ACTIONS.SET_LOADING:
       return {
         ...state,
-        isLoading: action.payload
+        isLoading: action.payload,
       }
-    
+
     case AUTH_ACTIONS.CLEAR_ERROR:
       return {
         ...state,
-        error: null
+        error: null,
       }
-    
+
     default:
       return state
   }
@@ -117,8 +117,8 @@ export const AuthProvider = ({ children }) => {
             payload: {
               accessToken,
               refreshToken,
-              user: JSON.parse(user)
-            }
+              user: JSON.parse(user),
+            },
           })
         }
       } catch (error) {
@@ -152,7 +152,7 @@ export const AuthProvider = ({ children }) => {
     const url = `${API_BASE_URL}${endpoint}`
     const headers = {
       'Content-Type': 'application/json',
-      ...options.headers
+      ...options.headers,
     }
 
     if (state.accessToken) {
@@ -161,7 +161,7 @@ export const AuthProvider = ({ children }) => {
 
     const response = await fetch(url, {
       ...options,
-      headers
+      headers,
     })
 
     if (!response.ok) {
@@ -179,16 +179,16 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await apiCall('/auth/login', {
         method: 'POST',
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email, password }),
       })
 
       if (response.success) {
         const { user, accessToken, refreshToken } = response.data
         saveAuthState(accessToken, refreshToken, user)
-        
+
         dispatch({
           type: AUTH_ACTIONS.LOGIN_SUCCESS,
-          payload: { user, accessToken, refreshToken }
+          payload: { user, accessToken, refreshToken },
         })
 
         return { success: true, user }
@@ -198,29 +198,29 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       dispatch({
         type: AUTH_ACTIONS.LOGIN_FAILURE,
-        payload: error.message
+        payload: error.message,
       })
       return { success: false, error: error.message }
     }
   }
 
   // Register function
-  const register = async (userData) => {
+  const register = async userData => {
     dispatch({ type: AUTH_ACTIONS.REGISTER_START })
 
     try {
       const response = await apiCall('/auth/register', {
         method: 'POST',
-        body: JSON.stringify(userData)
+        body: JSON.stringify(userData),
       })
 
       if (response.success) {
         const { user, accessToken, refreshToken } = response.data
         saveAuthState(accessToken, refreshToken, user)
-        
+
         dispatch({
           type: AUTH_ACTIONS.REGISTER_SUCCESS,
-          payload: { user, accessToken, refreshToken }
+          payload: { user, accessToken, refreshToken },
         })
 
         return { success: true, user }
@@ -230,7 +230,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       dispatch({
         type: AUTH_ACTIONS.REGISTER_FAILURE,
-        payload: error.message
+        payload: error.message,
       })
       return { success: false, error: error.message }
     }
@@ -241,7 +241,7 @@ export const AuthProvider = ({ children }) => {
     try {
       if (state.accessToken) {
         await apiCall('/auth/logout', {
-          method: 'POST'
+          method: 'POST',
         })
       }
     } catch (error) {
@@ -253,17 +253,17 @@ export const AuthProvider = ({ children }) => {
   }
 
   // Update profile function
-  const updateProfile = async (profileData) => {
+  const updateProfile = async profileData => {
     try {
       const response = await apiCall('/profile/job-seeker', {
         method: 'PUT',
-        body: JSON.stringify(profileData)
+        body: JSON.stringify(profileData),
       })
 
       if (response.success) {
         dispatch({
           type: AUTH_ACTIONS.UPDATE_PROFILE,
-          payload: response.data.profile
+          payload: response.data.profile,
         })
         return { success: true, profile: response.data.profile }
       } else {
@@ -278,11 +278,11 @@ export const AuthProvider = ({ children }) => {
   const getCurrentUser = async () => {
     try {
       const response = await apiCall('/auth/me')
-      
+
       if (response.success) {
         dispatch({
           type: AUTH_ACTIONS.UPDATE_PROFILE,
-          payload: response.data.user
+          payload: response.data.user,
         })
         return { success: true, user: response.data.user }
       } else {
@@ -307,14 +307,10 @@ export const AuthProvider = ({ children }) => {
     updateProfile,
     getCurrentUser,
     clearError,
-    apiCall
+    apiCall,
   }
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  )
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
 // Custom hook to use auth context

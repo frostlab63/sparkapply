@@ -9,7 +9,7 @@ const LoginForm = ({ onSwitchToRegister, onClose }) => {
   const { login, isLoading, error, clearError } = useAuth()
   const [formData, setFormData] = useState({
     email: '',
-    password: ''
+    password: '',
   })
   const [showPassword, setShowPassword] = useState(false)
   const [validationErrors, setValidationErrors] = useState({})
@@ -38,18 +38,18 @@ const LoginForm = ({ onSwitchToRegister, onClose }) => {
   }
 
   // Handle input change
-  const handleInputChange = (e) => {
+  const handleInputChange = e => {
     const { name, value } = e.target
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }))
 
     // Clear validation error for this field
     if (validationErrors[name]) {
       setValidationErrors(prev => ({
         ...prev,
-        [name]: ''
+        [name]: '',
       }))
     }
 
@@ -60,9 +60,9 @@ const LoginForm = ({ onSwitchToRegister, onClose }) => {
   }
 
   // Handle form submission
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault()
-    
+
     if (!validateForm()) {
       return
     }
@@ -71,7 +71,7 @@ const LoginForm = ({ onSwitchToRegister, onClose }) => {
 
     try {
       const result = await login(formData.email, formData.password)
-      
+
       if (result.success) {
         // Login successful - close modal or redirect
         if (onClose) {

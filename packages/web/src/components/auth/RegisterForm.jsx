@@ -2,9 +2,18 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { 
-  User, Mail, Lock, Eye, EyeOff, Briefcase, 
-  Loader2, AlertCircle, CheckCircle, ArrowRight, ArrowLeft 
+import {
+  User,
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  Briefcase,
+  Loader2,
+  AlertCircle,
+  CheckCircle,
+  ArrowRight,
+  ArrowLeft,
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 
@@ -18,7 +27,7 @@ const RegisterForm = ({ onSwitchToLogin, onClose }) => {
     role: 'job_seeker',
     firstName: '',
     lastName: '',
-    agreeToTerms: false
+    agreeToTerms: false,
   })
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -28,7 +37,7 @@ const RegisterForm = ({ onSwitchToLogin, onClose }) => {
   const totalSteps = 2
 
   // Form validation for each step
-  const validateStep = (step) => {
+  const validateStep = step => {
     const errors = {}
 
     if (step === 1) {
@@ -82,18 +91,18 @@ const RegisterForm = ({ onSwitchToLogin, onClose }) => {
   }
 
   // Handle input change
-  const handleInputChange = (e) => {
+  const handleInputChange = e => {
     const { name, value, type, checked } = e.target
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === 'checkbox' ? checked : value,
     }))
 
     // Clear validation error for this field
     if (validationErrors[name]) {
       setValidationErrors(prev => ({
         ...prev,
-        [name]: ''
+        [name]: '',
       }))
     }
 
@@ -116,9 +125,9 @@ const RegisterForm = ({ onSwitchToLogin, onClose }) => {
   }
 
   // Handle form submission
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault()
-    
+
     if (!validateStep(currentStep)) {
       return
     }
@@ -129,10 +138,11 @@ const RegisterForm = ({ onSwitchToLogin, onClose }) => {
       const result = await register({
         email: formData.email,
         password: formData.password,
-        confirmPassword: formData.confirmPassword,
-        role: formData.role
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        userType: formData.role,
       })
-      
+
       if (result.success) {
         // Registration successful - close modal or redirect
         if (onClose) {
@@ -246,9 +256,7 @@ const RegisterForm = ({ onSwitchToLogin, onClose }) => {
 
       {/* Role Selection */}
       <div className="space-y-2">
-        <label className="text-sm font-medium text-gray-700">
-          I am a...
-        </label>
+        <label className="text-sm font-medium text-gray-700">I am a...</label>
         <div className="grid grid-cols-1 gap-3">
           <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
             <input
@@ -371,15 +379,17 @@ const RegisterForm = ({ onSwitchToLogin, onClose }) => {
           {currentStep === 1 ? 'Create Your Account' : 'Complete Your Profile'}
         </CardTitle>
         <CardDescription className="text-gray-500">
-          {currentStep === 1 
+          {currentStep === 1
             ? 'Set up your SparkApply account credentials'
-            : 'Tell us a bit about yourself'
-          }
+            : 'Tell us a bit about yourself'}
         </CardDescription>
       </CardHeader>
 
       <CardContent>
-        <form onSubmit={currentStep === totalSteps ? handleSubmit : (e) => e.preventDefault()} className="space-y-6">
+        <form
+          onSubmit={currentStep === totalSteps ? handleSubmit : e => e.preventDefault()}
+          className="space-y-6"
+        >
           {/* Global Error Message */}
           {error && (
             <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700">
@@ -406,7 +416,7 @@ const RegisterForm = ({ onSwitchToLogin, onClose }) => {
                 Back
               </Button>
             )}
-            
+
             {currentStep < totalSteps ? (
               <Button
                 type="button"

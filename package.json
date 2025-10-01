@@ -9,10 +9,20 @@
   "scripts": {
     "dev": "pnpm run --parallel dev",
     "build": "pnpm run --recursive build",
+    "build:frontend": "pnpm --filter web build",
+    "build:backend": "pnpm --filter user-service build",
     "test": "pnpm run --recursive test",
+    "test:frontend": "pnpm --filter web test",
+    "test:backend": "pnpm --filter user-service test",
+    "test:e2e": "pnpm --filter web test:e2e",
+    "test:coverage": "pnpm --filter web test:coverage",
     "lint": "pnpm run --recursive lint",
+    "lint:fix": "pnpm run --recursive lint:fix",
+    "format": "pnpm run --recursive format",
+    "format:check": "pnpm run --recursive format:check",
     "clean": "pnpm run --recursive clean && rm -rf node_modules",
-    "setup": "pnpm install && pnpm run --recursive setup"
+    "setup": "pnpm install && pnpm run --recursive setup",
+    "start": "pnpm run --parallel start"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

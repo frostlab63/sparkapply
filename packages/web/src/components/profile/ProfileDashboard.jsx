@@ -2,10 +2,20 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { 
-  User, Mail, MapPin, Briefcase, Star, Edit3, 
-  Upload, CheckCircle, AlertCircle, TrendingUp,
-  Calendar, Clock, Target
+import {
+  User,
+  Mail,
+  MapPin,
+  Briefcase,
+  Star,
+  Edit3,
+  Upload,
+  CheckCircle,
+  AlertCircle,
+  TrendingUp,
+  Calendar,
+  Clock,
+  Target,
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 
@@ -36,7 +46,7 @@ const ProfileDashboard = () => {
   // Calculate profile completion percentage
   const calculateCompletion = () => {
     if (!profileData?.jobSeekerProfile) return 0
-    
+
     const profile = profileData.jobSeekerProfile
     const fields = [
       profile.first_name,
@@ -44,9 +54,9 @@ const ProfileDashboard = () => {
       profile.location,
       profile.bio,
       profile.skills?.length > 0,
-      profile.years_experience > 0
+      profile.years_experience > 0,
     ]
-    
+
     const completedFields = fields.filter(Boolean).length
     return Math.round((completedFields / fields.length) * 100)
   }
@@ -101,7 +111,6 @@ const ProfileDashboard = () => {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
           {/* Profile Completion Card */}
           <div className="lg:col-span-1">
             <Card className="border border-gray-200 rounded-xl">
@@ -110,9 +119,7 @@ const ProfileDashboard = () => {
                   <Target className="w-5 h-5 text-orange-500" />
                   Profile Completion
                 </CardTitle>
-                <CardDescription>
-                  Complete your profile to get better job matches
-                </CardDescription>
+                <CardDescription>Complete your profile to get better job matches</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -123,7 +130,7 @@ const ProfileDashboard = () => {
                       <span className="font-medium text-gray-900">{completionPercentage}%</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
+                      <div
                         className="bg-gradient-to-r from-orange-500 to-red-500 h-2 rounded-full transition-all duration-300"
                         style={{ width: `${completionPercentage}%` }}
                       ></div>
@@ -190,19 +197,16 @@ const ProfileDashboard = () => {
                   <User className="w-5 h-5 text-orange-500" />
                   Profile Information
                 </CardTitle>
-                <CardDescription>
-                  Your current profile details
-                </CardDescription>
+                <CardDescription>Your current profile details</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  
                   {/* Basic Information */}
                   <div className="space-y-4">
                     <h3 className="font-semibold text-gray-900 border-b border-gray-200 pb-2">
                       Basic Information
                     </h3>
-                    
+
                     <div className="space-y-3">
                       <div className="flex items-center gap-3">
                         <Mail className="w-4 h-4 text-gray-400" />
@@ -217,10 +221,10 @@ const ProfileDashboard = () => {
                         <div>
                           <p className="text-sm text-gray-600">Full Name</p>
                           <p className="font-medium text-gray-900">
-                            {profileData?.jobSeekerProfile?.first_name && profileData?.jobSeekerProfile?.last_name
+                            {profileData?.jobSeekerProfile?.first_name &&
+                            profileData?.jobSeekerProfile?.last_name
                               ? `${profileData.jobSeekerProfile.first_name} ${profileData.jobSeekerProfile.last_name}`
-                              : 'Not provided'
-                            }
+                              : 'Not provided'}
                           </p>
                         </div>
                       </div>
@@ -240,10 +244,9 @@ const ProfileDashboard = () => {
                         <div>
                           <p className="text-sm text-gray-600">Experience</p>
                           <p className="font-medium text-gray-900">
-                            {profileData?.jobSeekerProfile?.years_experience 
+                            {profileData?.jobSeekerProfile?.years_experience
                               ? `${profileData.jobSeekerProfile.years_experience} years`
-                              : 'Not provided'
-                            }
+                              : 'Not provided'}
                           </p>
                         </div>
                       </div>
@@ -255,12 +258,13 @@ const ProfileDashboard = () => {
                     <h3 className="font-semibold text-gray-900 border-b border-gray-200 pb-2">
                       Professional Details
                     </h3>
-                    
+
                     <div className="space-y-3">
                       <div>
                         <p className="text-sm text-gray-600 mb-2">Bio</p>
                         <p className="text-gray-900 text-sm leading-relaxed">
-                          {profileData?.jobSeekerProfile?.bio || 'No bio provided yet. Add a brief description about yourself and your career goals.'}
+                          {profileData?.jobSeekerProfile?.bio ||
+                            'No bio provided yet. Add a brief description about yourself and your career goals.'}
                         </p>
                       </div>
 
@@ -298,7 +302,10 @@ const ProfileDashboard = () => {
                     <Edit3 className="w-4 h-4 mr-2" />
                     Edit Profile
                   </Button>
-                  <Button variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-50">
+                  <Button
+                    variant="outline"
+                    className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                  >
                     <Upload className="w-4 h-4 mr-2" />
                     Upload Resume
                   </Button>

@@ -30,7 +30,7 @@ global.ResizeObserver = class ResizeObserver {
 // Mock matchMedia
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
-  value: (query) => ({
+  value: query => ({
     matches: false,
     media: query,
     onchange: null,

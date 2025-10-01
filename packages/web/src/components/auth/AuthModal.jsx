@@ -24,7 +24,7 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
 
   // Handle escape key
   useEffect(() => {
-    const handleEscape = (e) => {
+    const handleEscape = e => {
       if (e.key === 'Escape' && isOpen) {
         onClose()
       }
@@ -35,7 +35,7 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
   }, [isOpen, onClose])
 
   // Handle backdrop click
-  const handleBackdropClick = (e) => {
+  const handleBackdropClick = e => {
     if (e.target === e.currentTarget) {
       onClose()
     }
@@ -44,7 +44,7 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
   if (!isOpen) return null
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
       onClick={handleBackdropClick}
     >
@@ -61,15 +61,9 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
         {/* Modal Content */}
         <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
           {mode === 'login' ? (
-            <LoginForm
-              onSwitchToRegister={() => setMode('register')}
-              onClose={onClose}
-            />
+            <LoginForm onSwitchToRegister={() => setMode('register')} onClose={onClose} />
           ) : (
-            <RegisterForm
-              onSwitchToLogin={() => setMode('login')}
-              onClose={onClose}
-            />
+            <RegisterForm onSwitchToLogin={() => setMode('login')} onClose={onClose} />
           )}
         </div>
       </div>
