@@ -4,10 +4,32 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge.jsx'
 import { Zap, Users, Target, Sparkles, ArrowRight, Heart, Briefcase, TrendingUp } from 'lucide-react'
 import sparkApplyLogo from './assets/sparkapply-logo.png'
+import { AuthProvider, useAuth } from './contexts/AuthContext'
+import AuthModal from './components/auth/AuthModal'
+import ProfileDashboard from './components/profile/ProfileDashboard'
 import './App.css'
 
-function App() {
+function AppContent() {
   const [isHovered, setIsHovered] = useState(false)
+  const [authModalOpen, setAuthModalOpen] = useState(false)
+  const [authMode, setAuthMode] = useState('login')
+  const { isAuthenticated, user } = useAuth()
+
+  // Handle auth button clicks
+  const handleSignIn = () => {
+    setAuthMode('login')
+    setAuthModalOpen(true)
+  }
+
+  const handleGetStarted = () => {
+    setAuthMode('register')
+    setAuthModalOpen(true)
+  }
+
+  // If user is authenticated, show dashboard
+  if (isAuthenticated) {
+    return <ProfileDashboard />
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -21,8 +43,11 @@ function App() {
             <a href="#features" className="text-gray-600 hover:text-orange-500 transition-colors">Features</a>
             <a href="#how-it-works" className="text-gray-600 hover:text-orange-500 transition-colors">How it Works</a>
             <a href="#pricing" className="text-gray-600 hover:text-orange-500 transition-colors">Pricing</a>
-            <Button variant="outline" className="mr-2">Sign In</Button>
-            <Button className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white">
+            <Button variant="outline" className="mr-2" onClick={handleSignIn}>Sign In</Button>
+            <Button 
+              className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white"
+              onClick={handleGetStarted}
+            >
               Get Started
             </Button>
           </nav>
@@ -49,6 +74,7 @@ function App() {
               className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white text-lg px-8 py-6 font-semibold rounded-lg transition-all duration-300 hover:shadow-lg hover:shadow-orange-500/30 hover:-translate-y-0.5"
               onMouseEnter={() => setIsHovered(true)}
               onMouseLeave={() => setIsHovered(false)}
+              onClick={handleGetStarted}
             >
               Start Swiping Jobs
               <ArrowRight className={`ml-2 w-5 h-5 transition-transform duration-300 ${isHovered ? 'translate-x-1' : ''}`} />
@@ -213,7 +239,23 @@ function App() {
           </div>
         </div>
       </footer>
+
+      {/* Auth Modal */}
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        initialMode={authMode}
+      />
     </div>
+  )
+}
+
+// Main App component with AuthProvider
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   )
 }
 
