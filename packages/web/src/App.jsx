@@ -36,39 +36,39 @@ function App() {
             <Zap className="w-4 h-4 mr-1" />
             AI-Powered Job Discovery
           </Badge>
-          <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-orange-500 via-red-500 to-pink-600 bg-clip-text text-transparent">
+          <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight bg-gradient-to-r from-orange-500 via-red-500 to-pink-600 bg-clip-text text-transparent">
             Swipe Your Way to Your Dream Job
           </h1>
-          <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-lg md:text-xl text-gray-500 mb-8 max-w-3xl mx-auto leading-relaxed">
             SparkApply revolutionizes job searching with AI-powered matching, automated applications, 
             and a Tinder-like interface that makes finding your next opportunity engaging and efficient.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Button 
               size="lg" 
-              className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white text-lg px-8 py-6"
+              className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white text-lg px-8 py-6 font-semibold rounded-lg transition-all duration-300 hover:shadow-lg hover:shadow-orange-500/30 hover:-translate-y-0.5"
               onMouseEnter={() => setIsHovered(true)}
               onMouseLeave={() => setIsHovered(false)}
             >
               Start Swiping Jobs
-              <ArrowRight className={`ml-2 w-5 h-5 transition-transform ${isHovered ? 'translate-x-1' : ''}`} />
+              <ArrowRight className={`ml-2 w-5 h-5 transition-transform duration-300 ${isHovered ? 'translate-x-1' : ''}`} />
             </Button>
-            <Button variant="outline" size="lg" className="text-lg px-8 py-6">
+            <Button variant="outline" size="lg" className="text-lg px-8 py-6 font-semibold rounded-lg border-2 border-orange-500 text-orange-500 hover:bg-orange-50 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5">
               Watch Demo
             </Button>
           </div>
-          <div className="mt-12 flex justify-center items-center space-x-8 text-sm text-gray-500">
-            <div className="flex items-center">
-              <Users className="w-4 h-4 mr-1" />
-              10K+ Job Seekers
+          <div className="mt-16 flex flex-col sm:flex-row justify-center items-center gap-6 sm:gap-8">
+            <div className="flex items-center text-gray-600">
+              <Users className="w-5 h-5 mr-2 text-orange-500" />
+              <span className="font-medium">10K+ Job Seekers</span>
             </div>
-            <div className="flex items-center">
-              <Briefcase className="w-4 h-4 mr-1" />
-              5K+ Jobs Posted
+            <div className="flex items-center text-gray-600">
+              <Briefcase className="w-5 h-5 mr-2 text-orange-500" />
+              <span className="font-medium">5K+ Jobs Posted</span>
             </div>
-            <div className="flex items-center">
-              <TrendingUp className="w-4 h-4 mr-1" />
-              85% Match Rate
+            <div className="flex items-center text-gray-600">
+              <TrendingUp className="w-5 h-5 mr-2 text-emerald-500" />
+              <span className="font-medium">85% Match Rate</span>
             </div>
           </div>
         </div>
@@ -78,47 +78,47 @@ function App() {
       <section id="features" className="py-20 px-4 bg-white">
         <div className="container mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">Why Choose SparkApply?</h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            <h2 className="text-3xl md:text-4xl font-bold mb-6 text-gray-900">Why Choose SparkApply?</h2>
+            <p className="text-lg md:text-xl text-gray-500 max-w-2xl mx-auto leading-relaxed">
               Our AI-powered platform transforms the traditional job search into an engaging, 
               efficient, and personalized experience.
             </p>
           </div>
           
           <div className="grid md:grid-cols-3 gap-8">
-            <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
-              <CardHeader>
-                <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mb-4">
-                  <Heart className="w-6 h-6 text-orange-600" />
+            <Card className="border border-gray-200 rounded-xl p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 bg-white">
+              <CardHeader className="p-0">
+                <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                  <Heart className="w-6 h-6 text-orange-500" />
                 </div>
-                <CardTitle>Swipe-Based Discovery</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-xl font-semibold text-gray-900 mb-3">Swipe-Based Discovery</CardTitle>
+                <CardDescription className="text-gray-500 leading-relaxed">
                   Browse jobs like dating apps - swipe right on opportunities you love, 
                   left on those you don't. It's that simple!
                 </CardDescription>
               </CardHeader>
             </Card>
 
-            <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
-              <CardHeader>
-                <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mb-4">
-                  <Sparkles className="w-6 h-6 text-red-600" />
+            <Card className="border border-gray-200 rounded-xl p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 bg-white">
+              <CardHeader className="p-0">
+                <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                  <Sparkles className="w-6 h-6 text-red-500" />
                 </div>
-                <CardTitle>AI-Generated Applications</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-xl font-semibold text-gray-900 mb-3">AI-Generated Applications</CardTitle>
+                <CardDescription className="text-gray-500 leading-relaxed">
                   Our AI creates tailored CVs and cover letters for each job, 
                   highlighting your relevant skills and experience automatically.
                 </CardDescription>
               </CardHeader>
             </Card>
 
-            <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
-              <CardHeader>
-                <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mb-4">
-                  <Target className="w-6 h-6 text-orange-600" />
+            <Card className="border border-gray-200 rounded-xl p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 bg-white">
+              <CardHeader className="p-0">
+                <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                  <Target className="w-6 h-6 text-orange-500" />
                 </div>
-                <CardTitle>Smart Matching</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-xl font-semibold text-gray-900 mb-3">Smart Matching</CardTitle>
+                <CardDescription className="text-gray-500 leading-relaxed">
                   Advanced algorithms analyze your profile and preferences to show 
                   you the most relevant opportunities first.
                 </CardDescription>
@@ -132,8 +132,8 @@ function App() {
       <section id="how-it-works" className="py-20 px-4 bg-gray-50">
         <div className="container mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">How SparkApply Works</h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            <h2 className="text-3xl md:text-4xl font-bold mb-6 text-gray-900">How SparkApply Works</h2>
+            <p className="text-lg md:text-xl text-gray-500 max-w-2xl mx-auto leading-relaxed">
               Get started in minutes and let our AI do the heavy lifting for your job search.
             </p>
           </div>
@@ -145,12 +145,12 @@ function App() {
               { step: "3", title: "AI Applies", desc: "We generate and submit tailored applications" },
               { step: "4", title: "Track Progress", desc: "Monitor responses and schedule interviews" }
             ].map((item, index) => (
-              <div key={index} className="text-center">
-                <div className="w-16 h-16 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center text-white text-xl font-bold mx-auto mb-4">
+              <div key={index} className="text-center group">
+                <div className="w-16 h-16 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center text-white text-xl font-bold mx-auto mb-6 shadow-lg group-hover:scale-110 transition-transform duration-300">
                   {item.step}
                 </div>
-                <h3 className="text-xl font-semibold mb-2">{item.title}</h3>
-                <p className="text-gray-600">{item.desc}</p>
+                <h3 className="text-xl font-semibold mb-3 text-gray-900">{item.title}</h3>
+                <p className="text-gray-500 leading-relaxed">{item.desc}</p>
               </div>
             ))}
           </div>
@@ -160,11 +160,11 @@ function App() {
       {/* CTA Section */}
       <section className="py-20 px-4 bg-gradient-to-r from-orange-500 to-red-500">
         <div className="container mx-auto text-center text-white">
-          <h2 className="text-4xl font-bold mb-4">Ready to Transform Your Job Search?</h2>
-          <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
+          <h2 className="text-3xl md:text-4xl font-bold mb-6 leading-tight">Ready to Transform Your Job Search?</h2>
+          <p className="text-lg md:text-xl mb-8 opacity-90 max-w-2xl mx-auto leading-relaxed">
             Join thousands of job seekers who have already discovered their dream jobs through SparkApply.
           </p>
-          <Button size="lg" variant="secondary" className="text-lg px-8 py-6">
+          <Button size="lg" variant="secondary" className="text-lg px-8 py-6 font-semibold bg-white text-orange-500 hover:bg-gray-50 rounded-lg transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5">
             Get Started for Free
             <ArrowRight className="ml-2 w-5 h-5" />
           </Button>
