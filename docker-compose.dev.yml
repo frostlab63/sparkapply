@@ -1,0 +1,113 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: sparkapply-postgres
+    environment:
+      POSTGRES_DB: sparkapply_dev
+      POSTGRES_USER: sparkapply
+      POSTGRES_PASSWORD: sparkapply_dev_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sparkapply -d sparkapply_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sparkapply-network
+
+  # Redis for session storage and caching
+  redis:
+    image: redis:7-alpine
+    container_name: sparkapply-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sparkapply-network
+
+  # Backend API Service
+  backend:
+    build:
+      context: ./packages/api/user-service
+      dockerfile: Dockerfile.dev
+    container_name: sparkapply-backend
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://sparkapply:sparkapply_dev_password@postgres:5432/sparkapply_dev
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: dev-jwt-secret-key
+      JWT_REFRESH_SECRET: dev-jwt-refresh-secret-key
+      PORT: 3001
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./packages/api/user-service:/app
+      - /app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - sparkapply-network
+    command: npm run dev
+
+  # Frontend Development Server
+  frontend:
+    build:
+      context: ./packages/web
+      dockerfile: Dockerfile.dev
+    container_name: sparkapply-frontend
+    environment:
+      VITE_API_URL: http://localhost:3001/api/v1
+      VITE_APP_ENV: development
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./packages/web:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - sparkapply-network
+    command: npm run dev
+
+  # Nginx Reverse Proxy (optional for production-like setup)
+  nginx:
+    image: nginx:alpine
+    container_name: sparkapply-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/dev.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - sparkapply-network
+    profiles:
+      - production-like
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  sparkapply-network:
+    driver: bridge
