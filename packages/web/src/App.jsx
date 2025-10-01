@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button.jsx'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
 import { Zap, Users, Target, Sparkles, ArrowRight, Heart, Briefcase, TrendingUp } from 'lucide-react'
+import sparkApplyLogo from './assets/sparkapply-logo.png'
 import './App.css'
 
 function App() {
@@ -13,20 +14,15 @@ function App() {
       {/* Header */}
       <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              SparkApply
-            </span>
+          <div className="flex items-center space-x-3">
+            <img src={sparkApplyLogo} alt="SparkApply" className="h-8 w-auto" />
           </div>
           <nav className="hidden md:flex items-center space-x-6">
-            <a href="#features" className="text-gray-600 hover:text-blue-600 transition-colors">Features</a>
-            <a href="#how-it-works" className="text-gray-600 hover:text-blue-600 transition-colors">How it Works</a>
-            <a href="#pricing" className="text-gray-600 hover:text-blue-600 transition-colors">Pricing</a>
+            <a href="#features" className="text-gray-600 hover:text-orange-500 transition-colors">Features</a>
+            <a href="#how-it-works" className="text-gray-600 hover:text-orange-500 transition-colors">How it Works</a>
+            <a href="#pricing" className="text-gray-600 hover:text-orange-500 transition-colors">Pricing</a>
             <Button variant="outline" className="mr-2">Sign In</Button>
-            <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+            <Button className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white">
               Get Started
             </Button>
           </nav>
@@ -36,11 +32,11 @@ function App() {
       {/* Hero Section */}
       <section className="py-20 px-4">
         <div className="container mx-auto text-center">
-          <Badge className="mb-6 bg-blue-100 text-blue-700 hover:bg-blue-200">
+          <Badge className="mb-6 bg-orange-100 text-orange-700 hover:bg-orange-200">
             <Zap className="w-4 h-4 mr-1" />
             AI-Powered Job Discovery
           </Badge>
-          <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+          <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-orange-500 via-red-500 to-pink-600 bg-clip-text text-transparent">
             Swipe Your Way to Your Dream Job
           </h1>
           <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">
@@ -50,7 +46,7 @@ function App() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Button 
               size="lg" 
-              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-lg px-8 py-6"
+              className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white text-lg px-8 py-6"
               onMouseEnter={() => setIsHovered(true)}
               onMouseLeave={() => setIsHovered(false)}
             >
@@ -92,8 +88,8 @@ function App() {
           <div className="grid md:grid-cols-3 gap-8">
             <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
               <CardHeader>
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
-                  <Heart className="w-6 h-6 text-blue-600" />
+                <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mb-4">
+                  <Heart className="w-6 h-6 text-orange-600" />
                 </div>
                 <CardTitle>Swipe-Based Discovery</CardTitle>
                 <CardDescription>
@@ -105,8 +101,8 @@ function App() {
 
             <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
               <CardHeader>
-                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
-                  <Sparkles className="w-6 h-6 text-purple-600" />
+                <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mb-4">
+                  <Sparkles className="w-6 h-6 text-red-600" />
                 </div>
                 <CardTitle>AI-Generated Applications</CardTitle>
                 <CardDescription>
@@ -118,8 +114,8 @@ function App() {
 
             <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
               <CardHeader>
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
-                  <Target className="w-6 h-6 text-green-600" />
+                <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mb-4">
+                  <Target className="w-6 h-6 text-orange-600" />
                 </div>
                 <CardTitle>Smart Matching</CardTitle>
                 <CardDescription>
@@ -150,7 +146,7 @@ function App() {
               { step: "4", title: "Track Progress", desc: "Monitor responses and schedule interviews" }
             ].map((item, index) => (
               <div key={index} className="text-center">
-                <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center text-white text-xl font-bold mx-auto mb-4">
+                <div className="w-16 h-16 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center text-white text-xl font-bold mx-auto mb-4">
                   {item.step}
                 </div>
                 <h3 className="text-xl font-semibold mb-2">{item.title}</h3>
@@ -162,7 +158,7 @@ function App() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 px-4 bg-gradient-to-r from-blue-600 to-purple-600">
+      <section className="py-20 px-4 bg-gradient-to-r from-orange-500 to-red-500">
         <div className="container mx-auto text-center text-white">
           <h2 className="text-4xl font-bold mb-4">Ready to Transform Your Job Search?</h2>
           <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
@@ -180,11 +176,8 @@ function App() {
         <div className="container mx-auto">
           <div className="grid md:grid-cols-4 gap-8">
             <div>
-              <div className="flex items-center space-x-2 mb-4">
-                <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                  <Sparkles className="w-5 h-5 text-white" />
-                </div>
-                <span className="text-xl font-bold">SparkApply</span>
+              <div className="flex items-center space-x-3 mb-4">
+                <img src={sparkApplyLogo} alt="SparkApply" className="h-8 w-auto brightness-0 invert" />
               </div>
               <p className="text-gray-400">
                 AI-powered job discovery platform for the modern job seeker.
