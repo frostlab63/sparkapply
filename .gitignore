@@ -119,3 +119,5 @@ ehthumbs.db
 
 # Screenshots
 screenshots/
+packages/api/web-scraping-service/venv/
+packages/api/web-scraping-service/__pycache__/
