@@ -4,18 +4,18 @@
 
 ## Sprint 6: Gamification and Communication
 
-- [ ] **Gamification Engine**
-  - [ ] Design and implement the points system
-  - [ ] Create a variety of badges and achievements
-  - [ ] Develop the user interface for displaying gamification elements
-- [ ] **Real-time Chat**
-  - [ ] Choose and integrate a real-time messaging library (e.g., Socket.IO)
-  - [ ] Develop the chat interface for one-on-one conversations
-  - [ ] Implement message history and notifications
-- [ ] **Calendar Integration**
-  - [ ] Integrate with Google Calendar API
-  - [ ] Integrate with Outlook Calendar API
-  - [ ] Develop the user interface for scheduling interviews
+- [x] **Gamification Engine**
+  - [x] Design and implement the points system
+  - [x] Create a variety of badges and achievements
+  - [x] Develop the user interface for displaying gamification elements
+- [x] **Real-time Chat**
+  - [x] Choose and integrate a real-time messaging library (e.g., Socket.IO)
+  - [x] Develop the chat interface for one-on-one conversations
+  - [x] Implement message history and notifications
+- [x] **Calendar Integration**
+  - [x] Integrate with Google Calendar API
+  - [x] Integrate with Outlook Calendar API
+  - [x] Develop the user interface for scheduling interviews
 
 ## Sprint 7: Production Deployment and Launch
 

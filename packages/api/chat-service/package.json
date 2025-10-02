@@ -1,0 +1,1 @@
+{"name": "chat-service", "version": "1.0.0", "description": "Chat service for SparkApply", "main": "src/index.js", "scripts": {"start": "node src/index.js", "dev": "nodemon src/index.js", "test": "jest"}, "dependencies": {"express": "^4.17.1", "socket.io": "^4.3.1", "mongoose": "^6.0.12"}, "devDependencies": {"jest": "^27.3.1", "nodemon": "^2.0.14", "supertest": "^6.1.6"}}
