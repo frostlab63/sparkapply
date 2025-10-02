@@ -383,6 +383,8 @@ class ProfileController {
         isPublic: profile.is_public,
         hasResume: !!profile.resume_url,
         lastUpdated: profile.updated_at,
+        profileStrength: this.calculateProfileStrength(profile),
+        recommendations: this.getProfileRecommendations(profile),
       };
 
       res.json({
@@ -397,6 +399,442 @@ class ProfileController {
         error: 'GET_PROFILE_STATS_FAILED',
       });
     }
+  }
+
+  /**
+   * Add work experience
+   */
+  async addExperience(req, res) {
+    try {
+      const experienceData = req.body;
+      
+      const profile = await JobSeekerProfile.findOne({
+        where: { user_id: req.user.id },
+      });
+
+      if (!profile) {
+        return res.status(404).json({
+          success: false,
+          message: 'Profile not found',
+          error: 'PROFILE_NOT_FOUND',
+        });
+      }
+
+      const experience = {
+        id: Date.now().toString(),
+        ...experienceData,
+        added_at: new Date().toISOString(),
+      };
+
+      const experiences = [...(profile.experience || []), experience];
+      await profile.update({ experience: experiences });
+
+      res.json({
+        success: true,
+        message: 'Experience added successfully',
+        data: {
+          experience,
+          experiences: profile.experience,
+        },
+      });
+    } catch (error) {
+      console.error('Add experience error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to add experience',
+        error: 'ADD_EXPERIENCE_FAILED',
+      });
+    }
+  }
+
+  /**
+   * Update work experience
+   */
+  async updateExperience(req, res) {
+    try {
+      const { experienceId } = req.params;
+      const experienceData = req.body;
+      
+      const profile = await JobSeekerProfile.findOne({
+        where: { user_id: req.user.id },
+      });
+
+      if (!profile) {
+        return res.status(404).json({
+          success: false,
+          message: 'Profile not found',
+          error: 'PROFILE_NOT_FOUND',
+        });
+      }
+
+      const experiences = [...(profile.experience || [])];
+      const experienceIndex = experiences.findIndex(exp => exp.id === experienceId);
+      
+      if (experienceIndex === -1) {
+        return res.status(404).json({
+          success: false,
+          message: 'Experience not found',
+          error: 'EXPERIENCE_NOT_FOUND',
+        });
+      }
+
+      experiences[experienceIndex] = {
+        ...experiences[experienceIndex],
+        ...experienceData,
+        updated_at: new Date().toISOString(),
+      };
+
+      await profile.update({ experience: experiences });
+
+      res.json({
+        success: true,
+        message: 'Experience updated successfully',
+        data: {
+          experience: experiences[experienceIndex],
+          experiences: profile.experience,
+        },
+      });
+    } catch (error) {
+      console.error('Update experience error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to update experience',
+        error: 'UPDATE_EXPERIENCE_FAILED',
+      });
+    }
+  }
+
+  /**
+   * Remove work experience
+   */
+  async removeExperience(req, res) {
+    try {
+      const { experienceId } = req.params;
+      
+      const profile = await JobSeekerProfile.findOne({
+        where: { user_id: req.user.id },
+      });
+
+      if (!profile) {
+        return res.status(404).json({
+          success: false,
+          message: 'Profile not found',
+          error: 'PROFILE_NOT_FOUND',
+        });
+      }
+
+      const experiences = (profile.experience || []).filter(exp => exp.id !== experienceId);
+      await profile.update({ experience: experiences });
+
+      res.json({
+        success: true,
+        message: 'Experience removed successfully',
+        data: {
+          experiences: profile.experience,
+        },
+      });
+    } catch (error) {
+      console.error('Remove experience error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to remove experience',
+        error: 'REMOVE_EXPERIENCE_FAILED',
+      });
+    }
+  }
+
+  /**
+   * Add education
+   */
+  async addEducation(req, res) {
+    try {
+      const educationData = req.body;
+      
+      const profile = await JobSeekerProfile.findOne({
+        where: { user_id: req.user.id },
+      });
+
+      if (!profile) {
+        return res.status(404).json({
+          success: false,
+          message: 'Profile not found',
+          error: 'PROFILE_NOT_FOUND',
+        });
+      }
+
+      const education = {
+        id: Date.now().toString(),
+        ...educationData,
+        added_at: new Date().toISOString(),
+      };
+
+      const educations = [...(profile.education || []), education];
+      await profile.update({ education: educations });
+
+      res.json({
+        success: true,
+        message: 'Education added successfully',
+        data: {
+          education,
+          educations: profile.education,
+        },
+      });
+    } catch (error) {
+      console.error('Add education error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to add education',
+        error: 'ADD_EDUCATION_FAILED',
+      });
+    }
+  }
+
+  /**
+   * Update education
+   */
+  async updateEducation(req, res) {
+    try {
+      const { educationId } = req.params;
+      const educationData = req.body;
+      
+      const profile = await JobSeekerProfile.findOne({
+        where: { user_id: req.user.id },
+      });
+
+      if (!profile) {
+        return res.status(404).json({
+          success: false,
+          message: 'Profile not found',
+          error: 'PROFILE_NOT_FOUND',
+        });
+      }
+
+      const educations = [...(profile.education || [])];
+      const educationIndex = educations.findIndex(edu => edu.id === educationId);
+      
+      if (educationIndex === -1) {
+        return res.status(404).json({
+          success: false,
+          message: 'Education not found',
+          error: 'EDUCATION_NOT_FOUND',
+        });
+      }
+
+      educations[educationIndex] = {
+        ...educations[educationIndex],
+        ...educationData,
+        updated_at: new Date().toISOString(),
+      };
+
+      await profile.update({ education: educations });
+
+      res.json({
+        success: true,
+        message: 'Education updated successfully',
+        data: {
+          education: educations[educationIndex],
+          educations: profile.education,
+        },
+      });
+    } catch (error) {
+      console.error('Update education error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to update education',
+        error: 'UPDATE_EDUCATION_FAILED',
+      });
+    }
+  }
+
+  /**
+   * Remove education
+   */
+  async removeEducation(req, res) {
+    try {
+      const { educationId } = req.params;
+      
+      const profile = await JobSeekerProfile.findOne({
+        where: { user_id: req.user.id },
+      });
+
+      if (!profile) {
+        return res.status(404).json({
+          success: false,
+          message: 'Profile not found',
+          error: 'PROFILE_NOT_FOUND',
+        });
+      }
+
+      const educations = (profile.education || []).filter(edu => edu.id !== educationId);
+      await profile.update({ education: educations });
+
+      res.json({
+        success: true,
+        message: 'Education removed successfully',
+        data: {
+          educations: profile.education,
+        },
+      });
+    } catch (error) {
+      console.error('Remove education error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to remove education',
+        error: 'REMOVE_EDUCATION_FAILED',
+      });
+    }
+  }
+
+  /**
+   * Update job preferences
+   */
+  async updateJobPreferences(req, res) {
+    try {
+      const preferences = req.body;
+      
+      const profile = await JobSeekerProfile.findOne({
+        where: { user_id: req.user.id },
+      });
+
+      if (!profile) {
+        return res.status(404).json({
+          success: false,
+          message: 'Profile not found',
+          error: 'PROFILE_NOT_FOUND',
+        });
+      }
+
+      const currentPreferences = profile.job_preferences || {};
+      const updatedPreferences = {
+        ...currentPreferences,
+        ...preferences,
+        updated_at: new Date().toISOString(),
+      };
+
+      await profile.update({ job_preferences: updatedPreferences });
+
+      res.json({
+        success: true,
+        message: 'Job preferences updated successfully',
+        data: {
+          job_preferences: profile.job_preferences,
+        },
+      });
+    } catch (error) {
+      console.error('Update job preferences error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to update job preferences',
+        error: 'UPDATE_JOB_PREFERENCES_FAILED',
+      });
+    }
+  }
+
+  /**
+   * Calculate profile strength score
+   */
+  calculateProfileStrength(profile) {
+    let score = 0;
+    const maxScore = 100;
+
+    // Basic info (20 points)
+    if (profile.first_name && profile.last_name) score += 5;
+    if (profile.phone) score += 3;
+    if (profile.location) score += 4;
+    if (profile.bio && profile.bio.length > 50) score += 8;
+
+    // Professional info (30 points)
+    if (profile.skills && profile.skills.length >= 5) score += 10;
+    if (profile.experience && profile.experience.length >= 1) score += 10;
+    if (profile.years_experience > 0) score += 5;
+    if (profile.salary_expectation) score += 5;
+
+    // Education (15 points)
+    if (profile.education && profile.education.length >= 1) score += 15;
+
+    // Links and portfolio (20 points)
+    if (profile.resume_url) score += 8;
+    if (profile.linkedin_url) score += 4;
+    if (profile.github_url) score += 4;
+    if (profile.portfolio_url) score += 4;
+
+    // Job preferences (15 points)
+    if (profile.job_preferences && Object.keys(profile.job_preferences).length > 0) score += 10;
+    if (profile.availability) score += 5;
+
+    return Math.min(score, maxScore);
+  }
+
+  /**
+   * Get profile improvement recommendations
+   */
+  getProfileRecommendations(profile) {
+    const recommendations = [];
+
+    if (!profile.first_name || !profile.last_name) {
+      recommendations.push({
+        type: 'basic_info',
+        priority: 'high',
+        message: 'Add your full name to make your profile more professional',
+        action: 'Add name',
+      });
+    }
+
+    if (!profile.bio || profile.bio.length < 50) {
+      recommendations.push({
+        type: 'bio',
+        priority: 'high',
+        message: 'Write a compelling bio to showcase your personality and goals',
+        action: 'Write bio',
+      });
+    }
+
+    if (!profile.skills || profile.skills.length < 5) {
+      recommendations.push({
+        type: 'skills',
+        priority: 'high',
+        message: 'Add more skills to improve your job matching',
+        action: 'Add skills',
+      });
+    }
+
+    if (!profile.resume_url) {
+      recommendations.push({
+        type: 'resume',
+        priority: 'high',
+        message: 'Upload your resume to increase application success',
+        action: 'Upload resume',
+      });
+    }
+
+    if (!profile.experience || profile.experience.length === 0) {
+      recommendations.push({
+        type: 'experience',
+        priority: 'medium',
+        message: 'Add work experience to showcase your background',
+        action: 'Add experience',
+      });
+    }
+
+    if (!profile.linkedin_url) {
+      recommendations.push({
+        type: 'linkedin',
+        priority: 'medium',
+        message: 'Connect your LinkedIn profile for better networking',
+        action: 'Add LinkedIn',
+      });
+    }
+
+    if (!profile.job_preferences || Object.keys(profile.job_preferences).length === 0) {
+      recommendations.push({
+        type: 'preferences',
+        priority: 'medium',
+        message: 'Set job preferences for better recommendations',
+        action: 'Set preferences',
+      });
+    }
+
+    return recommendations;
   }
 }
 

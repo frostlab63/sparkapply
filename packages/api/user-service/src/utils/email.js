@@ -1,4 +1,5 @@
 const nodemailer = require('nodemailer');
+const emailTemplates = require('../templates/emailTemplates');
 
 class EmailService {
   constructor() {
@@ -49,11 +50,11 @@ class EmailService {
 
     try {
       const mailOptions = {
-        from: `"${this.fromName}" <${this.fromEmail}>`,
+        from: `${this.fromName} <${this.fromEmail}>`,
         to,
         subject,
         html,
-        text: text || this.stripHtml(html),
+        text,
       };
 
       const info = await this.transporter.sendMail(mailOptions);
@@ -72,186 +73,165 @@ class EmailService {
     }
   }
 
-  async sendVerificationEmail(email, verificationToken) {
+  async sendVerificationEmail(email, verificationToken, userName = null) {
     const verificationUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/verify-email?token=${verificationToken}`;
     
-    const html = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <title>Verify Your SparkApply Account</title>
-        <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { text-align: center; margin-bottom: 30px; }
-          .logo { color: #F97316; font-size: 24px; font-weight: bold; }
-          .button { display: inline-block; background: linear-gradient(135deg, #F97316 0%, #EF4444 100%); color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; margin: 20px 0; }
-          .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 14px; color: #666; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <div class="logo">🔥 SparkApply</div>
-          </div>
-          
-          <h1>Welcome to SparkApply!</h1>
-          
-          <p>Thank you for signing up for SparkApply, the AI-powered job discovery platform. To get started, please verify your email address by clicking the button below:</p>
-          
-          <div style="text-align: center;">
-            <a href="${verificationUrl}" class="button">Verify Email Address</a>
-          </div>
-          
-          <p>If the button doesn't work, you can also copy and paste this link into your browser:</p>
-          <p style="word-break: break-all; color: #F97316;">${verificationUrl}</p>
-          
-          <p>This verification link will expire in 24 hours for security reasons.</p>
-          
-          <p>If you didn't create an account with SparkApply, you can safely ignore this email.</p>
-          
-          <div class="footer">
-            <p>Best regards,<br>The SparkApply Team</p>
-            <p>This is an automated email. Please do not reply to this message.</p>
-          </div>
-        </div>
-      </body>
-      </html>
+    const html = emailTemplates.emailVerification(verificationUrl, userName);
+    
+    const text = `
+      Welcome to SparkApply!
+      
+      Thank you for signing up for SparkApply, the AI-powered job discovery platform.
+      
+      To get started, please verify your email address by visiting this link:
+      ${verificationUrl}
+      
+      This verification link will expire in 24 hours for security reasons.
+      
+      If you didn't create an account with SparkApply, you can safely ignore this email.
+      
+      Best regards,
+      The SparkApply Team
     `;
 
     return await this.sendEmail({
       to: email,
       subject: 'Verify Your SparkApply Account',
       html,
+      text,
     });
   }
 
-  async sendPasswordResetEmail(email, resetToken) {
+  async sendPasswordResetEmail(email, resetToken, userName = null) {
     const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${resetToken}`;
     
-    const html = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <title>Reset Your SparkApply Password</title>
-        <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { text-align: center; margin-bottom: 30px; }
-          .logo { color: #F97316; font-size: 24px; font-weight: bold; }
-          .button { display: inline-block; background: linear-gradient(135deg, #F97316 0%, #EF4444 100%); color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; margin: 20px 0; }
-          .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 14px; color: #666; }
-          .warning { background: #FEF2F2; border: 1px solid #FECACA; padding: 15px; border-radius: 8px; margin: 20px 0; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <div class="logo">🔥 SparkApply</div>
-          </div>
-          
-          <h1>Reset Your Password</h1>
-          
-          <p>We received a request to reset the password for your SparkApply account. If you made this request, click the button below to reset your password:</p>
-          
-          <div style="text-align: center;">
-            <a href="${resetUrl}" class="button">Reset Password</a>
-          </div>
-          
-          <p>If the button doesn't work, you can also copy and paste this link into your browser:</p>
-          <p style="word-break: break-all; color: #F97316;">${resetUrl}</p>
-          
-          <div class="warning">
-            <strong>Security Notice:</strong>
-            <ul>
-              <li>This reset link will expire in 1 hour for security reasons</li>
-              <li>If you didn't request a password reset, please ignore this email</li>
-              <li>Your password will remain unchanged until you create a new one</li>
-            </ul>
-          </div>
-          
-          <div class="footer">
-            <p>Best regards,<br>The SparkApply Team</p>
-            <p>This is an automated email. Please do not reply to this message.</p>
-          </div>
-        </div>
-      </body>
-      </html>
+    const html = emailTemplates.passwordReset(resetUrl, userName);
+    
+    const text = `
+      Reset Your SparkApply Password
+      
+      We received a request to reset the password for your SparkApply account.
+      
+      If you made this request, visit this link to reset your password:
+      ${resetUrl}
+      
+      This password reset link will expire in 1 hour for security reasons.
+      
+      If you didn't request a password reset, you can safely ignore this email.
+      
+      Best regards,
+      The SparkApply Team
     `;
 
     return await this.sendEmail({
       to: email,
       subject: 'Reset Your SparkApply Password',
       html,
+      text,
     });
   }
 
-  async sendWelcomeEmail(email, firstName) {
-    const html = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <title>Welcome to SparkApply!</title>
-        <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { text-align: center; margin-bottom: 30px; }
-          .logo { color: #F97316; font-size: 24px; font-weight: bold; }
-          .button { display: inline-block; background: linear-gradient(135deg, #F97316 0%, #EF4444 100%); color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; margin: 20px 0; }
-          .feature { background: #FFF7ED; padding: 15px; border-radius: 8px; margin: 15px 0; }
-          .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 14px; color: #666; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <div class="logo">🔥 SparkApply</div>
-          </div>
-          
-          <h1>Welcome to SparkApply, ${firstName || 'there'}! 🎉</h1>
-          
-          <p>Your email has been verified and your account is now active. You're ready to start your AI-powered job search journey!</p>
-          
-          <div class="feature">
-            <h3>🚀 What's Next?</h3>
-            <ul>
-              <li><strong>Complete Your Profile:</strong> Add your skills, experience, and preferences</li>
-              <li><strong>Start Swiping:</strong> Discover jobs with our Tinder-like interface</li>
-              <li><strong>Let AI Apply:</strong> Our AI creates tailored applications for you</li>
-              <li><strong>Track Progress:</strong> Monitor your applications and responses</li>
-            </ul>
-          </div>
-          
-          <div style="text-align: center;">
-            <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/dashboard" class="button">Get Started</a>
-          </div>
-          
-          <p>If you have any questions or need help getting started, don't hesitate to reach out to our support team.</p>
-          
-          <div class="footer">
-            <p>Happy job hunting!<br>The SparkApply Team</p>
-          </div>
-        </div>
-      </body>
-      </html>
+  async sendWelcomeEmail(email, userName, profileUrl = null) {
+    const defaultProfileUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/profile`;
+    const html = emailTemplates.welcome(userName, profileUrl || defaultProfileUrl);
+    
+    const text = `
+      Welcome to SparkApply, ${userName}!
+      
+      Congratulations! Your email has been verified and your SparkApply account is now active.
+      
+      Here's what you can do now:
+      - Complete your profile for better job matches
+      - Start discovering jobs with our swipe interface
+      - Let AI create tailored applications for you
+      - Track all your applications in one place
+      
+      Get started: ${profileUrl || defaultProfileUrl}
+      
+      Best regards,
+      The SparkApply Team
     `;
 
     return await this.sendEmail({
       to: email,
-      subject: 'Welcome to SparkApply - Let\'s Find Your Dream Job!',
+      subject: 'Welcome to SparkApply! 🎉',
       html,
+      text,
     });
   }
 
-  stripHtml(html) {
-    return html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+  async sendTwoFactorCode(email, code, userName = null) {
+    const html = emailTemplates.twoFactorCode(code, userName);
+    
+    const text = `
+      Your SparkApply Verification Code
+      
+      Here's your verification code: ${code}
+      
+      This code will expire in 10 minutes for security reasons.
+      
+      If you didn't request this code, please contact our support team.
+      
+      Best regards,
+      The SparkApply Team
+    `;
+
+    return await this.sendEmail({
+      to: email,
+      subject: 'Your SparkApply Verification Code',
+      html,
+      text,
+    });
+  }
+
+  async sendSecurityAlert(email, alertType, details, userName = null) {
+    const html = emailTemplates.securityAlert(alertType, details, userName);
+    
+    const text = `
+      SparkApply Security Alert
+      
+      We detected ${alertType} on your SparkApply account.
+      
+      Activity Details: ${details}
+      
+      If this was you, no action is needed. If you don't recognize this activity, 
+      please secure your account immediately.
+      
+      Best regards,
+      The SparkApply Team
+    `;
+
+    return await this.sendEmail({
+      to: email,
+      subject: 'SparkApply Security Alert',
+      html,
+      text,
+    });
+  }
+
+  async sendEmailChangeConfirmation(email, newEmail, confirmUrl, userName = null) {
+    const html = emailTemplates.emailChangeConfirmation(newEmail, confirmUrl, userName);
+    
+    const text = `
+      Confirm Your Email Change
+      
+      You requested to change your SparkApply email address to: ${newEmail}
+      
+      To complete this change, visit: ${confirmUrl}
+      
+      This confirmation link will expire in 24 hours.
+      
+      Best regards,
+      The SparkApply Team
+    `;
+
+    return await this.sendEmail({
+      to: email,
+      subject: 'Confirm Email Change - SparkApply',
+      html,
+      text,
+    });
   }
 }
 
-// Create singleton instance
-const emailService = new EmailService();
-
-module.exports = emailService;
+module.exports = new EmailService();

@@ -62,6 +62,52 @@ const User = sequelize.define('User', {
       max: 100,
     },
   },
+  // Two-factor authentication fields
+  two_factor_enabled: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+  },
+  two_factor_code: {
+    type: DataTypes.STRING(6),
+    allowNull: true,
+  },
+  two_factor_expires: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  },
+  two_factor_verified: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+  },
+  backup_codes: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+  },
+  // Security tracking
+  failed_login_attempts: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+  },
+  locked_until: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  },
+  // Email change fields
+  new_email: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    validate: {
+      isEmail: true,
+    },
+  },
+  email_change_token: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  email_change_expires: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  },
 }, {
   tableName: 'users',
   timestamps: true,
