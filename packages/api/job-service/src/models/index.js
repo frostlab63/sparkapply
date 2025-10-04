@@ -40,7 +40,9 @@ const defineAssociations = () => {
   });
 
   // User - Application associations (User model is in user-service)
-  // These will be virtual associations for now
+  // These will be virtual associations handled at the API level
+  // Commenting out for now to avoid Sequelize errors
+  /*
   Application.belongsTo(sequelize.models.User || {}, {
     foreignKey: 'user_id',
     as: 'user',
@@ -53,6 +55,7 @@ const defineAssociations = () => {
     as: 'referrer',
     constraints: false,
   });
+  */
 
   // Job - JobMatch associations
   Job.hasMany(JobMatch, {
@@ -69,12 +72,14 @@ const defineAssociations = () => {
     onUpdate: 'CASCADE',
   });
 
-  // User - JobMatch associations
+  // User - JobMatch associations (handled at API level)
+  /*
   JobMatch.belongsTo(sequelize.models.User || {}, {
     foreignKey: 'user_id',
     as: 'user',
     constraints: false,
   });
+  */
 
   // Application - ApplicationStatusLog associations
   Application.hasMany(ApplicationStatusLog, {
@@ -91,12 +96,14 @@ const defineAssociations = () => {
     onUpdate: 'CASCADE',
   });
 
-  // ApplicationStatusLog - User associations (for changed_by)
+  // ApplicationStatusLog - User associations (for changed_by) - handled at API level
+  /*
   ApplicationStatusLog.belongsTo(sequelize.models.User || {}, {
     foreignKey: 'changed_by',
     as: 'changedBy',
     constraints: false,
   });
+  */
 };
 
 // Initialize associations
