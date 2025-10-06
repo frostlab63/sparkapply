@@ -70,36 +70,39 @@ try {
 
 # Step 5: Test user-service database connection
 Write-Status "Testing user-service database connection..." "Info"
+
+# Create the test script content
+$testScript = @"
+require('dotenv').config();
+const { Sequelize } = require('sequelize');
+const sequelize = new Sequelize(
+  process.env.POSTGRES_DB,
+  process.env.POSTGRES_USER,
+  process.env.POSTGRES_PASSWORD,
+  {
+    host: process.env.POSTGRES_HOST,
+    port: process.env.POSTGRES_PORT || 5432,
+    dialect: 'postgres',
+    logging: false
+  }
+);
+sequelize.authenticate()
+  .then(() => {
+    console.log('SUCCESS');
+    process.exit(0);
+  })
+  .catch(e => {
+    console.log('FAILED: ' + e.message);
+    process.exit(1);
+  });
+"@
+
 try {
-    $testResult = node -e "
-    require('dotenv').config();
-    const { Sequelize } = require('sequelize');
-    const sequelize = new Sequelize(
-      process.env.POSTGRES_DB,
-      process.env.POSTGRES_USER,
-      process.env.POSTGRES_PASSWORD,
-      {
-        host: process.env.POSTGRES_HOST,
-        port: process.env.POSTGRES_PORT || 5432,
-        dialect: 'postgres',
-        logging: false
-      }
-    );
-    sequelize.authenticate()
-      .then(() => {
-        console.log('SUCCESS');
-        process.exit(0);
-      })
-      .catch(e => {
-        console.log('FAILED: ' + e.message);
-        process.exit(1);
-      });
-    "
-    
+    $result = node -e $testScript
     if ($LASTEXITCODE -eq 0) {
         Write-Status "User-service database connection successful!" "Success"
     } else {
-        Write-Status "User-service database connection failed" "Error"
+        Write-Status "User-service database connection failed: $result" "Error"
     }
 } catch {
     Write-Status "Error testing user-service connection: $($_.Exception.Message)" "Error"
@@ -120,65 +123,42 @@ try {
 # Step 7: Test job-service database connection
 Write-Status "Testing job-service database connection..." "Info"
 try {
-    $testResult = node -e "
-    require('dotenv').config();
-    const { Sequelize } = require('sequelize');
-    const sequelize = new Sequelize(
-      process.env.POSTGRES_DB,
-      process.env.POSTGRES_USER,
-      process.env.POSTGRES_PASSWORD,
-      {
-        host: process.env.POSTGRES_HOST,
-        port: process.env.POSTGRES_PORT || 5432,
-        dialect: 'postgres',
-        logging: false
-      }
-    );
-    sequelize.authenticate()
-      .then(() => {
-        console.log('SUCCESS');
-        process.exit(0);
-      })
-      .catch(e => {
-        console.log('FAILED: ' + e.message);
-        process.exit(1);
-      });
-    "
-    
+    $result = node -e $testScript
     if ($LASTEXITCODE -eq 0) {
         Write-Status "Job-service database connection successful!" "Success"
     } else {
-        Write-Status "Job-service database connection failed" "Error"
+        Write-Status "Job-service database connection failed: $result" "Error"
     }
 } catch {
     Write-Status "Error testing job-service connection: $($_.Exception.Message)" "Error"
 }
 
-# Step 8: Test starting job-service
+# Step 8: Test starting job-service briefly
 Write-Status "Testing job-service startup..." "Info"
 try {
-    # Start the service in background and test if it responds
+    # Start the service in background
     $job = Start-Job -ScriptBlock {
-        Set-Location $using:PWD
+        param($location)
+        Set-Location $location
         npm run dev
-    }
+    } -ArgumentList (Get-Location)
     
     # Wait a bit for service to start
-    Start-Sleep -Seconds 5
+    Start-Sleep -Seconds 8
     
     # Test if service is responding
     try {
-        $response = Invoke-WebRequest -Uri "http://localhost:3002/health" -TimeoutSec 5
+        $response = Invoke-WebRequest -Uri "http://localhost:3002/health" -TimeoutSec 10 -UseBasicParsing
         if ($response.StatusCode -eq 200) {
             Write-Status "Job-service started successfully and responding on port 3002!" "Success"
         }
     } catch {
-        Write-Status "Job-service may have started but not responding yet" "Warning"
+        Write-Status "Job-service may have started but not responding yet (this is normal)" "Warning"
     }
     
     # Stop the background job
-    Stop-Job $job
-    Remove-Job $job
+    Stop-Job $job -ErrorAction SilentlyContinue
+    Remove-Job $job -ErrorAction SilentlyContinue
     
 } catch {
     Write-Status "Error testing job-service startup: $($_.Exception.Message)" "Warning"
@@ -207,3 +187,13 @@ Write-Host "- User Service: http://localhost:3001/health" -ForegroundColor Yello
 Write-Host "- Job Service:  http://localhost:3002/health" -ForegroundColor Yellow
 
 Write-Host "`n🎯 SparkApply is ready to build the future of job matching in East Africa!" -ForegroundColor Green
+
+# Quick database setup if needed
+if (-not $dockerAvailable) {
+    Write-Host "`n⚠️  Docker not detected. To set up local PostgreSQL:" -ForegroundColor Yellow
+    Write-Host "1. Install PostgreSQL from: https://www.postgresql.org/download/windows/" -ForegroundColor Cyan
+    Write-Host "2. Run these commands in psql:" -ForegroundColor Cyan
+    Write-Host "   CREATE USER sparkapply WITH PASSWORD 'sparkapply_dev_password';" -ForegroundColor White
+    Write-Host "   CREATE DATABASE sparkapply_dev OWNER sparkapply;" -ForegroundColor White
+    Write-Host "   GRANT ALL PRIVILEGES ON DATABASE sparkapply_dev TO sparkapply;" -ForegroundColor White
+}
