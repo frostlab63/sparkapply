@@ -14,8 +14,9 @@ const validationRules = {
     .withMessage('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'),
 
   confirmPassword: body('confirmPassword')
+    .optional()
     .custom((value, { req }) => {
-      if (value !== req.body.password) {
+      if (value && value !== req.body.password) {
         throw new Error('Password confirmation does not match password');
       }
       return true;

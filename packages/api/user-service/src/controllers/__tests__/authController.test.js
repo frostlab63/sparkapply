@@ -11,7 +11,7 @@ app.use(express.json())
 app.post('/register', authController.register)
 app.post('/login', authController.login)
 app.post('/refresh', authController.refreshToken)
-app.get('/me', authController.getMe)
+app.get('/me', authController.me)
 
 describe('Auth Controller', () => {
   beforeEach(async () => {

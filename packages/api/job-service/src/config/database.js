@@ -5,9 +5,9 @@ require('dotenv').config();
 
 // PostgreSQL Configuration
 const sequelize = new Sequelize(
-  process.env.POSTGRES_DB || 'sparkapply_jobs',
-  process.env.POSTGRES_USER || 'postgres',
-  process.env.POSTGRES_PASSWORD || 'password',
+  process.env.POSTGRES_DB || 'sparkapply_dev',
+  process.env.POSTGRES_USER || 'sparkapply',
+  process.env.POSTGRES_PASSWORD || 'sparkapply_dev_password',
   {
     host: process.env.POSTGRES_HOST || 'localhost',
     port: process.env.POSTGRES_PORT || 5432,

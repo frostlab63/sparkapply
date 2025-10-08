@@ -35,13 +35,26 @@ const ProfileDashboard = () => {
         }
       } catch (error) {
         console.error('Error loading profile:', error)
+        // Set basic profile data from user context if API fails
+        setProfileData(user)
       } finally {
         setIsLoading(false)
       }
     }
 
+    // Set a timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      if (isLoading) {
+        console.log('Profile loading timeout, using basic user data')
+        setProfileData(user)
+        setIsLoading(false)
+      }
+    }, 3000)
+
     loadProfile()
-  }, [getCurrentUser])
+
+    return () => clearTimeout(timeoutId)
+  }, [getCurrentUser, user, isLoading])
 
   // Calculate profile completion percentage
   const calculateCompletion = () => {

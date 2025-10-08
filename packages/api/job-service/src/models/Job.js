@@ -32,10 +32,7 @@ const Job = sequelize.define('Job', {
   company_id: {
     type: DataTypes.INTEGER,
     allowNull: true,
-    references: {
-      model: 'companies',
-      key: 'id',
-    },
+    comment: 'Company ID - will be linked to companies table later',
   },
   location: {
     type: DataTypes.STRING(255),

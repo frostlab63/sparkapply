@@ -19,8 +19,11 @@ module.exports = {
   clearMocks: true,
   resetMocks: true,
   restoreMocks: true,
-  // Ignore ES modules transformation
+  // Transform ES modules
+  transform: {
+    '^.+\\.js$': 'babel-jest'
+  },
   transformIgnorePatterns: [
-    'node_modules/',
+    'node_modules/(?!(uuid)/)'
   ],
 };

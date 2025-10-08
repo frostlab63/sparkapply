@@ -24,7 +24,7 @@ redis==5.2.0
 
 # Configuration and environment
 python-dotenv==1.0.1
-pydantic==2.10.3
+pydantic>=2.11.0
 pydantic-settings==2.6.1
 
 # Logging and monitoring
@@ -52,7 +52,7 @@ spacy==3.8.2
 textblob==0.18.0.post0
 
 # Machine learning (for job matching)
-scikit-learn==1.5.2
+scikit-learn>=1.6.0
 transformers==4.47.0
 torch==2.5.1
 

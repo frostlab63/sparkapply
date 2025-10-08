@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SparkApply - Job Search Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .search-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .search-form {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .search-input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .search-btn {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .search-btn:hover {
+            background: #5a6fd8;
+        }
+        .job-card {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .job-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        .job-company {
+            color: #667eea;
+            font-weight: 500;
+            margin-bottom: 10px;
+        }
+        .job-details {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        .job-detail {
+            background: #f0f0f0;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.9em;
+        }
+        .job-salary {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .job-description {
+            color: #666;
+            margin-bottom: 10px;
+        }
+        .job-skills {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+        .skill-tag {
+            background: #667eea;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .stats {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🚀 SparkApply Job Search Test</h1>
+        <p>Testing the job service API and search functionality</p>
+    </div>
+
+    <div class="stats">
+        <div id="stats">Loading job statistics...</div>
+    </div>
+
+    <div class="search-container">
+        <h2>Search Jobs</h2>
+        <div class="search-form">
+            <input type="text" id="searchQuery" class="search-input" placeholder="Search by title, company, or skills (e.g., JavaScript, React, Python)">
+            <button onclick="searchJobs()" class="search-btn">Search Jobs</button>
+            <button onclick="loadAllJobs()" class="search-btn">Show All Jobs</button>
+        </div>
+        
+        <div>
+            <label>
+                <input type="checkbox" id="remoteOnly"> Remote jobs only
+            </label>
+            <label style="margin-left: 20px;">
+                <select id="experienceLevel">
+                    <option value="">Any experience level</option>
+                    <option value="entry">Entry Level</option>
+                    <option value="mid">Mid Level</option>
+                    <option value="senior">Senior Level</option>
+                    <option value="executive">Executive</option>
+                </select>
+            </label>
+        </div>
+    </div>
+
+    <div id="results">
+        <div class="loading">Loading jobs...</div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3002/api/jobs';
+        
+        // Load all jobs on page load
+        window.onload = function() {
+            loadAllJobs();
+            loadStats();
+        };
+
+        async function loadStats() {
+            try {
+                const response = await fetch(`${API_BASE}/search`);
+                const data = await response.json();
+                
+                if (data.success && data.data) {
+                    const jobs = data.data;
+                    const totalJobs = jobs.length;
+                    const remoteJobs = jobs.filter(job => job.remote_type === 'remote').length;
+                    const companies = new Set(jobs.map(job => job.company_name)).size;
+                    
+                    document.getElementById('stats').innerHTML = `
+                        📊 <strong>${totalJobs}</strong> total jobs | 
+                        🏠 <strong>${remoteJobs}</strong> remote positions | 
+                        🏢 <strong>${companies}</strong> companies
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('stats').innerHTML = '❌ Error loading statistics';
+            }
+        }
+
+        async function loadAllJobs() {
+            document.getElementById('results').innerHTML = '<div class="loading">Loading all jobs...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/search`);
+                const data = await response.json();
+                
+                if (data.success && data.data) {
+                    displayJobs(data.data, 'All Jobs');
+                } else {
+                    throw new Error(data.message || 'Failed to load jobs');
+                }
+            } catch (error) {
+                document.getElementById('results').innerHTML = `
+                    <div class="error">❌ Error loading jobs: ${error.message}</div>
+                `;
+            }
+        }
+
+        async function searchJobs() {
+            const query = document.getElementById('searchQuery').value;
+            const remoteOnly = document.getElementById('remoteOnly').checked;
+            const experienceLevel = document.getElementById('experienceLevel').value;
+            
+            document.getElementById('results').innerHTML = '<div class="loading">Searching jobs...</div>';
+            
+            try {
+                let url = `${API_BASE}/search`;
+                const params = new URLSearchParams();
+                
+                if (query) params.append('q', query);
+                if (remoteOnly) params.append('remote', 'true');
+                if (experienceLevel) params.append('experience', experienceLevel);
+                
+                if (params.toString()) {
+                    url += '?' + params.toString();
+                }
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.success && data.data) {
+                    const searchTitle = query ? `Search Results for "${query}"` : 'Filtered Jobs';
+                    displayJobs(data.data, searchTitle);
+                } else {
+                    throw new Error(data.message || 'Search failed');
+                }
+            } catch (error) {
+                document.getElementById('results').innerHTML = `
+                    <div class="error">❌ Search error: ${error.message}</div>
+                `;
+            }
+        }
+
+        function displayJobs(jobs, title) {
+            if (jobs.length === 0) {
+                document.getElementById('results').innerHTML = `
+                    <div class="search-container">
+                        <h2>${title}</h2>
+                        <p>No jobs found matching your criteria.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const jobsHtml = jobs.map(job => {
+                const salary = job.salary_min && job.salary_max 
+                    ? `$${job.salary_min.toLocaleString()} - $${job.salary_max.toLocaleString()}`
+                    : job.salary_min 
+                    ? `From $${job.salary_min.toLocaleString()}`
+                    : job.salary_max 
+                    ? `Up to $${job.salary_max.toLocaleString()}`
+                    : 'Salary not specified';
+
+                const skills = Array.isArray(job.skills) ? job.skills : [];
+                const skillsHtml = skills.map(skill => `<span class="skill-tag">${skill}</span>`).join('');
+
+                return `
+                    <div class="job-card">
+                        <div class="job-title">${job.title}</div>
+                        <div class="job-company">${job.company_name}</div>
+                        <div class="job-details">
+                            <span class="job-detail">📍 ${job.location}</span>
+                            <span class="job-detail">💼 ${job.employment_type.replace('_', ' ')}</span>
+                            <span class="job-detail">🏠 ${job.remote_type.replace('_', ' ')}</span>
+                            <span class="job-detail">⭐ ${job.experience_level} level</span>
+                            <span class="job-detail job-salary">💰 ${salary}</span>
+                        </div>
+                        <div class="job-description">${job.description ? job.description.substring(0, 200) + '...' : 'No description available'}</div>
+                        <div class="job-skills">${skillsHtml}</div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('results').innerHTML = `
+                <div class="search-container">
+                    <h2>${title} (${jobs.length} found)</h2>
+                </div>
+                ${jobsHtml}
+            `;
+        }
+
+        // Allow Enter key to trigger search
+        document.getElementById('searchQuery').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchJobs();
+            }
+        });
+    </script>
+</body>
+</html>

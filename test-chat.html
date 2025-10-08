@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SparkApply Chat Test</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .chat-container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .messages {
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #fafafa;
+        }
+        .message {
+            margin-bottom: 10px;
+            padding: 8px;
+            border-radius: 4px;
+            background-color: #e3f2fd;
+        }
+        .message.own {
+            background-color: #c8e6c9;
+            text-align: right;
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        input, button {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        input {
+            flex: 1;
+        }
+        button {
+            background-color: #2196f3;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #1976d2;
+        }
+        .status {
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+        }
+        .connected {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+        }
+        .typing {
+            font-style: italic;
+            color: #666;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <h1>SparkApply Chat Test</h1>
+        
+        <div id="status" class="status">Connecting...</div>
+        
+        <div class="input-group">
+            <input type="text" id="username" placeholder="Enter your username" value="TestUser">
+            <button onclick="authenticate()">Connect</button>
+        </div>
+        
+        <div class="input-group">
+            <input type="text" id="roomId" placeholder="Room ID" value="general">
+            <button onclick="joinRoom()">Join Room</button>
+            <button onclick="leaveRoom()">Leave Room</button>
+        </div>
+        
+        <div id="messages" class="messages"></div>
+        
+        <div id="typing" class="typing"></div>
+        
+        <div class="input-group">
+            <input type="text" id="messageInput" placeholder="Type a message..." onkeypress="handleKeyPress(event)">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+        
+        <div class="input-group">
+            <button onclick="sendNotification()">Send Test Notification</button>
+            <button onclick="getConnectedUsers()">Get Users</button>
+            <button onclick="getRooms()">Get Rooms</button>
+        </div>
+    </div>
+
+    <script>
+        const socket = io('http://localhost:3003');
+        let currentUser = null;
+        let currentRoom = null;
+        let typingTimer = null;
+
+        // Socket event listeners
+        socket.on('connect', () => {
+            updateStatus('Connected to chat server', 'connected');
+        });
+
+        socket.on('disconnect', () => {
+            updateStatus('Disconnected from chat server', '');
+        });
+
+        socket.on('authenticated', (data) => {
+            updateStatus(`Authenticated as ${currentUser.username}`, 'connected');
+        });
+
+        socket.on('receive_message', (message) => {
+            displayMessage(message);
+        });
+
+        socket.on('user_joined_room', (data) => {
+            displaySystemMessage(`User ${data.userId} joined the room`);
+        });
+
+        socket.on('user_left_room', (data) => {
+            displaySystemMessage(`User ${data.userId} left the room`);
+        });
+
+        socket.on('user_typing', (data) => {
+            if (data.isTyping) {
+                document.getElementById('typing').textContent = `${data.username} is typing...`;
+            } else {
+                document.getElementById('typing').textContent = '';
+            }
+        });
+
+        socket.on('receive_notification', (notification) => {
+            alert(`Notification: ${notification.title}\n${notification.message}`);
+        });
+
+        socket.on('user_online', (data) => {
+            displaySystemMessage(`${data.username} came online`);
+        });
+
+        socket.on('user_offline', (data) => {
+            displaySystemMessage(`${data.username} went offline`);
+        });
+
+        // Functions
+        function authenticate() {
+            const username = document.getElementById('username').value;
+            if (!username) {
+                alert('Please enter a username');
+                return;
+            }
+
+            currentUser = {
+                userId: Date.now().toString(),
+                username: username,
+                email: `${username}@test.com`
+            };
+
+            socket.emit('authenticate', currentUser);
+        }
+
+        function joinRoom() {
+            const roomId = document.getElementById('roomId').value;
+            if (!roomId || !currentUser) {
+                alert('Please authenticate and enter a room ID');
+                return;
+            }
+
+            currentRoom = roomId;
+            socket.emit('join_room', {
+                roomId: roomId,
+                userId: currentUser.userId
+            });
+
+            updateStatus(`Joined room: ${roomId}`, 'connected');
+        }
+
+        function leaveRoom() {
+            if (!currentRoom || !currentUser) {
+                alert('Not in a room');
+                return;
+            }
+
+            socket.emit('leave_room', {
+                roomId: currentRoom,
+                userId: currentUser.userId
+            });
+
+            updateStatus(`Left room: ${currentRoom}`, '');
+            currentRoom = null;
+        }
+
+        function sendMessage() {
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value.trim();
+
+            if (!message || !currentRoom || !currentUser) {
+                alert('Please join a room and enter a message');
+                return;
+            }
+
+            socket.emit('send_message', {
+                roomId: currentRoom,
+                message: message,
+                userId: currentUser.userId,
+                username: currentUser.username
+            });
+
+            messageInput.value = '';
+            stopTyping();
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            } else {
+                startTyping();
+            }
+        }
+
+        function startTyping() {
+            if (!currentRoom || !currentUser) return;
+
+            socket.emit('typing_start', {
+                roomId: currentRoom,
+                userId: currentUser.userId,
+                username: currentUser.username
+            });
+
+            clearTimeout(typingTimer);
+            typingTimer = setTimeout(stopTyping, 3000);
+        }
+
+        function stopTyping() {
+            if (!currentRoom || !currentUser) return;
+
+            socket.emit('typing_stop', {
+                roomId: currentRoom,
+                userId: currentUser.userId,
+                username: currentUser.username
+            });
+
+            clearTimeout(typingTimer);
+        }
+
+        function sendNotification() {
+            if (!currentUser) {
+                alert('Please authenticate first');
+                return;
+            }
+
+            socket.emit('send_notification', {
+                targetUserId: currentUser.userId,
+                type: 'test',
+                title: 'Test Notification',
+                message: 'This is a test notification from the chat system',
+                data: { test: true }
+            });
+        }
+
+        function getConnectedUsers() {
+            fetch('http://localhost:3003/api/chat/users')
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Connected users:', data);
+                    alert(`Connected users: ${JSON.stringify(data.data, null, 2)}`);
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        function getRooms() {
+            fetch('http://localhost:3003/api/chat/rooms')
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Active rooms:', data);
+                    alert(`Active rooms: ${JSON.stringify(data.data, null, 2)}`);
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        function displayMessage(message) {
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message' + (message.userId === currentUser?.userId ? ' own' : '');
+            
+            const timestamp = new Date(message.timestamp).toLocaleTimeString();
+            messageDiv.innerHTML = `
+                <strong>${message.username}</strong> <small>(${timestamp})</small><br>
+                ${message.message}
+            `;
+            
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function displaySystemMessage(message) {
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+            messageDiv.style.backgroundColor = '#f0f0f0';
+            messageDiv.style.fontStyle = 'italic';
+            messageDiv.textContent = message;
+            
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function updateStatus(message, className) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = 'status ' + className;
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,239 @@
+{
+  "passed": 12,
+  "failed": 11,
+  "tests": [
+    {
+      "name": "Create Application with Intelligence",
+      "passed": true,
+      "details": "Application ID: 1"
+    },
+    {
+      "name": "Get Applications with Analytics",
+      "passed": {
+        "totalApplications": 0,
+        "responseRate": 0,
+        "interviewRate": 0,
+        "offerRate": 0,
+        "rejectionRate": 0,
+        "averageTimeToResponse": 0,
+        "averageTimeToInterview": 0,
+        "averageTimeToOffer": 0,
+        "statusBreakdown": {},
+        "priorityBreakdown": {},
+        "sourceBreakdown": {}
+      },
+      "details": "Found 1 applications"
+    },
+    {
+      "name": "Update Application with Automation",
+      "passed": true,
+      "details": "Status updated with automation"
+    },
+    {
+      "name": "Get Application Analytics",
+      "passed": {
+        "totalApplications": 0,
+        "responseRate": 0,
+        "interviewRate": 0,
+        "offerRate": 0,
+        "rejectionRate": 0,
+        "averageTimeToResponse": 0,
+        "averageTimeToInterview": 0,
+        "averageTimeToOffer": 0,
+        "statusBreakdown": {},
+        "priorityBreakdown": {},
+        "sourceBreakdown": {}
+      },
+      "details": "Response rate: 0%"
+    },
+    {
+      "name": "Schedule Interview with Conflict Detection",
+      "passed": false,
+      "details": "Request failed with status code 500"
+    },
+    {
+      "name": "Get Available Time Slots",
+      "passed": [
+        {
+          "time": "2025-10-09T13:00:00.000Z",
+          "formatted": "9:00 AM",
+          "available": true
+        },
+        {
+          "time": "2025-10-09T13:30:00.000Z",
+          "formatted": "9:30 AM",
+          "available": true
+        },
+        {
+          "time": "2025-10-09T14:00:00.000Z",
+          "formatted": "10:00 AM",
+          "available": true
+        },
+        {
+          "time": "2025-10-09T14:30:00.000Z",
+          "formatted": "10:30 AM",
+          "available": true
+        },
+        {
+          "time": "2025-10-09T15:00:00.000Z",
+          "formatted": "11:00 AM",
+          "available": true
+        },
+        {
+          "time": "2025-10-09T15:30:00.000Z",
+          "formatted": "11:30 AM",
+          "available": true
+        },
+        {
+          "time": "2025-10-09T16:00:00.000Z",
+          "formatted": "12:00 PM",
+          "available": true
+        },
+        {
+          "time": "2025-10-09T16:30:00.000Z",
+          "formatted": "12:30 PM",
+          "available": true
+        },
+        {
+          "time": "2025-10-09T17:00:00.000Z",
+          "formatted": "1:00 PM",
+          "available": true
+        },
+        {
+          "time": "2025-10-09T17:30:00.000Z",
+          "formatted": "1:30 PM",
+          "available": true
+        },
+        {
+          "time": "2025-10-09T18:00:00.000Z",
+          "formatted": "2:00 PM",
+          "available": true
+        },
+        {
+          "time": "2025-10-09T18:30:00.000Z",
+          "formatted": "2:30 PM",
+          "available": true
+        },
+        {
+          "time": "2025-10-09T19:00:00.000Z",
+          "formatted": "3:00 PM",
+          "available": true
+        },
+        {
+          "time": "2025-10-09T19:30:00.000Z",
+          "formatted": "3:30 PM",
+          "available": true
+        },
+        {
+          "time": "2025-10-09T20:00:00.000Z",
+          "formatted": "4:00 PM",
+          "available": true
+        },
+        {
+          "time": "2025-10-09T20:30:00.000Z",
+          "formatted": "4:30 PM",
+          "available": true
+        },
+        {
+          "time": "2025-10-09T21:00:00.000Z",
+          "formatted": "5:00 PM",
+          "available": true
+        },
+        {
+          "time": "2025-10-09T21:30:00.000Z",
+          "formatted": "5:30 PM",
+          "available": true
+        }
+      ],
+      "details": "Found 18 available slots"
+    },
+    {
+      "name": "Get Upcoming Interviews with Preparation",
+      "passed": [],
+      "details": "Found 0 upcoming interviews"
+    },
+    {
+      "name": "Get Interview Analytics",
+      "passed": {
+        "insights": [],
+        "timeframe": 90
+      },
+      "details": "Success rate: undefined%"
+    },
+    {
+      "name": "Upload Document",
+      "passed": true,
+      "details": "Document ID: 1"
+    },
+    {
+      "name": "Search Documents with Filtering",
+      "passed": false,
+      "details": "Cannot read properties of undefined (reading 'length')"
+    },
+    {
+      "name": "Get Document Organization",
+      "passed": false,
+      "details": "Cannot read properties of undefined (reading 'totalDocuments')"
+    },
+    {
+      "name": "Update Document Metadata",
+      "passed": false,
+      "details": "Request failed with status code 404"
+    },
+    {
+      "name": "Get Document Analytics",
+      "passed": {},
+      "details": "Total size: NaNKB"
+    },
+    {
+      "name": "Bulk Update Applications",
+      "passed": false,
+      "details": "Updated undefined applications"
+    },
+    {
+      "name": "Get Application Dashboard",
+      "passed": false,
+      "details": "Cannot read properties of undefined (reading 'totalApplications')"
+    },
+    {
+      "name": "Get Interview Dashboard",
+      "passed": false,
+      "details": "Request failed with status code 500"
+    },
+    {
+      "name": "Get Document Dashboard",
+      "passed": false,
+      "details": "Request failed with status code 500"
+    },
+    {
+      "name": "Get Application Suggestions",
+      "passed": false,
+      "details": "Cannot read properties of undefined (reading 'length')"
+    },
+    {
+      "name": "Get Interview Suggestions",
+      "passed": false,
+      "details": "Request failed with status code 500"
+    },
+    {
+      "name": "Get Document Suggestions",
+      "passed": false,
+      "details": "Request failed with status code 500"
+    },
+    {
+      "name": "Export Application Data (JSON)",
+      "passed": true,
+      "details": "Exported 1 applications"
+    },
+    {
+      "name": "Get Interview Calendar",
+      "passed": {},
+      "details": "Calendar data: {\"calendar\":{},\"summary\":{\"totalInterviews\":0,\"startDate\":\"2025-10-01T04:00:00.000Z\",\"endDate\":\"2025-11-01T03:59:59.999Z\",\"view\":\"month\"}}"
+    },
+    {
+      "name": "System Health Check",
+      "passed": true,
+      "details": "Response time: 1ms"
+    }
+  ]
+}

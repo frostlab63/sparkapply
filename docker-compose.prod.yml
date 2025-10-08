@@ -1,0 +1,293 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:14-alpine
+    container_name: sparkapply-postgres
+    environment:
+      POSTGRES_DB: sparkapply_prod
+      POSTGRES_USER: sparkapply
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sparkapply_secure_password}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sparkapply -d sparkapply_prod"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - sparkapply-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: sparkapply-redis
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-}
+    volumes:
+      - redis_data:/data
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - sparkapply-network
+
+  # User Service
+  user-service:
+    build:
+      context: ./packages/api/user-service
+      dockerfile: Dockerfile.prod
+    container_name: sparkapply-user-service
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      
+      # Database Configuration
+      DATABASE_URL: postgresql://sparkapply:${POSTGRES_PASSWORD:-sparkapply_secure_password}@postgres:5432/sparkapply_prod
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: sparkapply_prod
+      POSTGRES_USER: sparkapply
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sparkapply_secure_password}
+      
+      # JWT Configuration
+      JWT_SECRET: ${JWT_SECRET:-your_super_secure_jwt_secret_key_change_in_production}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-your_super_secure_refresh_secret_key_change_in_production}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-24h}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
+      
+      # Redis Configuration
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      REDIS_DB: 0
+      
+      # Email Configuration
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      FROM_EMAIL: ${FROM_EMAIL:-noreply@sparkapply.com}
+      
+      # CORS Configuration
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      
+      # Rate Limiting
+      RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-900000}
+      RATE_LIMIT_MAX_REQUESTS: ${RATE_LIMIT_MAX_REQUESTS:-100}
+      
+    ports:
+      - "${USER_SERVICE_PORT:-3001}:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - sparkapply-network
+    volumes:
+      - ./logs/user-service:/app/logs
+
+  # Job Service
+  job-service:
+    build:
+      context: ./packages/api/job-service
+      dockerfile: Dockerfile.prod
+    container_name: sparkapply-job-service
+    environment:
+      NODE_ENV: production
+      PORT: 3002
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      
+      # Database Configuration
+      DATABASE_URL: postgresql://sparkapply:${POSTGRES_PASSWORD:-sparkapply_secure_password}@postgres:5432/sparkapply_prod
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: sparkapply_prod
+      POSTGRES_USER: sparkapply
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sparkapply_secure_password}
+      
+      # JWT Configuration (must match user service)
+      JWT_SECRET: ${JWT_SECRET:-your_super_secure_jwt_secret_key_change_in_production}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-your_super_secure_refresh_secret_key_change_in_production}
+      
+      # Redis Configuration
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      REDIS_DB: 1
+      
+      # Service URLs
+      USER_SERVICE_URL: http://user-service:3001
+      
+      # External API Keys
+      LINKEDIN_API_KEY: ${LINKEDIN_API_KEY:-}
+      INDEED_API_KEY: ${INDEED_API_KEY:-}
+      GLASSDOOR_API_KEY: ${GLASSDOOR_API_KEY:-}
+      
+      # CORS Configuration
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      
+      # MongoDB Configuration (optional for analytics)
+      MONGODB_URI: ${MONGODB_URI:-}
+      
+      # File Upload Configuration
+      MAX_FILE_SIZE: ${MAX_FILE_SIZE:-10485760}
+      UPLOAD_PATH: ./uploads
+      
+    ports:
+      - "${JOB_SERVICE_PORT:-3002}:3002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      user-service:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - sparkapply-network
+    volumes:
+      - ./logs/job-service:/app/logs
+      - ./uploads:/app/uploads
+
+  # Frontend (React Application)
+  frontend:
+    build:
+      context: ./packages/web
+      dockerfile: Dockerfile.prod
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:3001}
+        VITE_USER_SERVICE_URL: ${VITE_USER_SERVICE_URL:-http://localhost:3001/api/v1}
+        VITE_JOB_SERVICE_URL: ${VITE_JOB_SERVICE_URL:-http://localhost:3002/api/jobs}
+    container_name: sparkapply-frontend
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+      - "${FRONTEND_SSL_PORT:-443}:443"
+    depends_on:
+      user-service:
+        condition: service_healthy
+      job-service:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - sparkapply-network
+    volumes:
+      - ./ssl:/etc/nginx/ssl:ro
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+
+  # Nginx Reverse Proxy (Alternative to frontend with built-in nginx)
+  nginx:
+    image: nginx:alpine
+    container_name: sparkapply-nginx
+    ports:
+      - "${NGINX_HTTP_PORT:-8080}:80"
+      - "${NGINX_HTTPS_PORT:-8443}:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./ssl:/etc/nginx/ssl:ro
+      - ./packages/web/dist:/usr/share/nginx/html:ro
+      - ./logs/nginx:/var/log/nginx
+    depends_on:
+      - user-service
+      - job-service
+    restart: unless-stopped
+    networks:
+      - sparkapply-network
+    profiles:
+      - nginx-proxy
+
+  # MongoDB (Optional - for analytics and advanced features)
+  mongodb:
+    image: mongo:6
+    container_name: sparkapply-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-admin_password}
+      MONGO_INITDB_DATABASE: sparkapply_analytics
+    volumes:
+      - mongodb_data:/data/db
+      - ./scripts/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+    ports:
+      - "${MONGODB_PORT:-27017}:27017"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - sparkapply-network
+    profiles:
+      - analytics
+
+  # Elasticsearch (Optional - for advanced search)
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.8.0
+    container_name: sparkapply-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    ports:
+      - "${ELASTICSEARCH_PORT:-9200}:9200"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200/_cluster/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - sparkapply-network
+    profiles:
+      - search
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  mongodb_data:
+    driver: local
+  elasticsearch_data:
+    driver: local
+
+networks:
+  sparkapply-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
