@@ -178,6 +178,91 @@ app.get('/api/jobs/:id', async (req, res) => {
   }
 });
 
+// Web scraping endpoints
+app.post('/api/scraping/run', async (req, res) => {
+  try {
+    console.log('🚀 Starting comprehensive job collection...');
+    
+    const RealJobService = require('./services/realJobService');
+    const jobService = new RealJobService();
+    
+    // Fetch jobs from all sources
+    const allJobs = await jobService.fetchAllJobs();
+    
+    // Save to database
+    let savedCount = 0;
+    for (const jobData of allJobs) {
+      try {
+        // Check if job already exists
+        const existingJob = await Job.findOne({
+          where: {
+            title: jobData.title,
+            company_name: jobData.company_name
+          }
+        });
+
+        if (!existingJob) {
+          await Job.create(jobData);
+          savedCount++;
+        }
+      } catch (error) {
+        console.error('Error saving job:', error.message);
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Successfully collected and saved ${savedCount} real jobs!`,
+      data: {
+        totalCollected: allJobs.length,
+        totalSaved: savedCount,
+        sampleJobs: allJobs.slice(0, 5).map(job => ({
+          title: job.title,
+          company: job.company_name,
+          location: job.location,
+          salary: `$${job.salary_min} - $${job.salary_max}`,
+          source: job.source
+        }))
+      }
+    });
+
+  } catch (error) {
+    console.error('Job collection error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to collect jobs',
+      message: error.message
+    });
+  }
+});
+
+// Get scraping status
+app.get('/api/scraping/status', async (req, res) => {
+  try {
+    const totalJobs = await Job.count();
+    const recentJobs = await Job.findAll({
+      limit: 5,
+      order: [['posted_date', 'DESC']],
+      attributes: ['id', 'title', 'company_name', 'posted_date']
+    });
+
+    res.json({
+      success: true,
+      data: {
+        totalJobs,
+        recentJobs,
+        lastUpdated: recentJobs[0]?.posted_date || null
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get status',
+      message: error.message
+    });
+  }
+});
+
 // AI-powered recommendations endpoint
 const aiMatchingService = require("./services/ai-matching-service");
 

@@ -1,57 +1,57 @@
 version: '3.8'
 
 services:
-  # PostgreSQL Database
+  # Database Services
   postgres:
     image: postgres:15-alpine
-    container_name: sparkapply-postgres
+    container_name: sparkapply-postgres-dev
     environment:
       POSTGRES_DB: sparkapply_dev
       POSTGRES_USER: sparkapply
-      POSTGRES_PASSWORD: sparkapply_dev_password
-      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+      POSTGRES_PASSWORD: password123
+      POSTGRES_HOST_AUTH_METHOD: trust
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - sparkapply-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U sparkapply -d sparkapply_dev"]
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - sparkapply-network
 
-  # Redis for session storage and caching
   redis:
     image: redis:7-alpine
-    container_name: sparkapply-redis
+    container_name: sparkapply-redis-dev
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    networks:
+      - sparkapply-network
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - sparkapply-network
 
-  # Backend API Service
-  backend:
+  # Backend Services
+  user-service:
     build:
-      context: .
-      dockerfile: ./packages/api/user-service/Dockerfile.dev
-    container_name: sparkapply-backend
+      context: ./packages/api/user-service
+      dockerfile: Dockerfile
+      target: development
+    container_name: sparkapply-user-service-dev
     environment:
-      NODE_ENV: development
-      DATABASE_URL: postgresql://sparkapply:sparkapply_dev_password@postgres:5432/sparkapply_dev
-      REDIS_URL: redis://redis:6379
-      JWT_SECRET: dev-jwt-secret-key
-      JWT_REFRESH_SECRET: dev-jwt-refresh-secret-key
-      PORT: 3001
+      - NODE_ENV=development
+      - PORT=3001
+      - DATABASE_URL=postgresql://sparkapply:password123@postgres:5432/sparkapply_dev
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=dev-jwt-secret-key-change-in-production
+      - JWT_EXPIRES_IN=7d
     ports:
       - "3001:3001"
     volumes:
@@ -64,43 +64,93 @@ services:
         condition: service_healthy
     networks:
       - sparkapply-network
+    restart: unless-stopped
     command: npm run dev
 
-  # Frontend Development Server
+  job-service:
+    build:
+      context: ./packages/api/job-service
+      dockerfile: Dockerfile
+      target: development
+    container_name: sparkapply-job-service-dev
+    environment:
+      - NODE_ENV=development
+      - PORT=3002
+      - DATABASE_URL=postgresql://sparkapply:password123@postgres:5432/sparkapply_dev
+      - REDIS_URL=redis://redis:6379
+    ports:
+      - "3002:3002"
+    volumes:
+      - ./packages/api/job-service:/app
+      - /app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - sparkapply-network
+    restart: unless-stopped
+    command: npm run dev
+
+  application-service:
+    build:
+      context: ./packages/api/application-service
+      dockerfile: Dockerfile
+      target: development
+    container_name: sparkapply-application-service-dev
+    environment:
+      - NODE_ENV=development
+      - PORT=3005
+      - DATABASE_URL=postgresql://sparkapply:password123@postgres:5432/sparkapply_dev
+      - REDIS_URL=redis://redis:6379
+      - USER_SERVICE_URL=http://user-service:3001
+      - JOB_SERVICE_URL=http://job-service:3002
+    ports:
+      - "3005:3005"
+    volumes:
+      - ./packages/api/application-service:/app
+      - /app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      user-service:
+        condition: service_started
+      job-service:
+        condition: service_started
+    networks:
+      - sparkapply-network
+    restart: unless-stopped
+    command: npm run dev
+
+  # Frontend Service
   frontend:
     build:
-      context: .
-      dockerfile: ./packages/web/Dockerfile.dev
-    container_name: sparkapply-frontend
+      context: ./packages/web
+      dockerfile: Dockerfile
+      target: development
+    container_name: sparkapply-frontend-dev
     environment:
-      VITE_API_URL: http://localhost:3001/api/v1
-      VITE_APP_ENV: development
+      - NODE_ENV=development
+      - VITE_API_BASE_URL=http://localhost:3001
+      - VITE_USER_SERVICE_URL=http://localhost:3001
+      - VITE_JOB_SERVICE_URL=http://localhost:3002
+      - VITE_APPLICATION_SERVICE_URL=http://localhost:3005
     ports:
       - "5173:5173"
     volumes:
       - ./packages/web:/app
       - /app/node_modules
     depends_on:
-      - backend
+      - user-service
+      - job-service
+      - application-service
     networks:
       - sparkapply-network
-    command: npm run dev
-
-  # Nginx Reverse Proxy (optional for production-like setup)
-  nginx:
-    image: nginx:alpine
-    container_name: sparkapply-nginx
-    ports:
-      - "80:80"
-    volumes:
-      - ./nginx/dev.conf:/etc/nginx/conf.d/default.conf
-    depends_on:
-      - frontend
-      - backend
-    networks:
-      - sparkapply-network
-    profiles:
-      - production-like
+    restart: unless-stopped
+    command: npm run dev -- --host 0.0.0.0
 
 volumes:
   postgres_data:
@@ -111,4 +161,3 @@ volumes:
 networks:
   sparkapply-network:
     driver: bridge
-

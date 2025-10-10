@@ -18,6 +18,7 @@ import {
   Target,
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
+import JobSwiper from '../jobs/JobSwiper'
 
 const ProfileDashboard = () => {
   const { user, updateProfile, getCurrentUser, logout } = useAuth()
@@ -122,10 +123,29 @@ const ProfileDashboard = () => {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Profile Completion Card */}
-          <div className="lg:col-span-1">
+      <main className="flex-1 p-8">
+        <div className="max-w-6xl mx-auto">
+          {/* Job Discovery Section */}
+          <div className="mb-8">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Target className="w-5 h-5 text-blue-500" />
+                  Discover Jobs
+                </CardTitle>
+                <CardDescription>
+                  Swipe through personalized job recommendations
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <JobSwiper />
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Profile Completion Card */}
+            <div className="lg:col-span-1">
             <Card className="border border-gray-200 rounded-xl">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -325,6 +345,7 @@ const ProfileDashboard = () => {
                 </div>
               </CardContent>
             </Card>
+          </div>
           </div>
         </div>
       </main>

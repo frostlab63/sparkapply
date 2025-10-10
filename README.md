@@ -96,39 +96,61 @@ SparkApply is an AI-powered job application platform that revolutionizes the job
 ### Prerequisites
 
 - **Node.js** >= 18.x
-- **pnpm** >= 8.x
-- **Docker** & **Docker Compose**
+- **npm** or **pnpm** >= 8.x
 - **PostgreSQL** >= 15.x
-- **MongoDB** >= 6.x
+- **Redis** >= 7.x
+- **Git**
 
-### Installation
+### 🎯 One-Command Setup
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/frostlab63/sparkapply.git
-   cd sparkapply
-   ```
+```bash
+# Clone and start everything
+git clone https://github.com/frostlab63/sparkapply.git
+cd sparkapply
+npm run dev
+```
 
-2. **Install dependencies**
-   ```bash
-   pnpm install
-   ```
+This single command will:
+- ✅ Start PostgreSQL and Redis services
+- ✅ Install all dependencies automatically
+- ✅ Set up environment files from examples
+- ✅ Start all backend services (User, Job, Application)
+- ✅ Start the frontend with hot reloading
+- ✅ Display service status and logs
 
-3. **Setup environment variables**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your configuration
-   ```
+### 🌐 Access Points
 
-4. **Start development environment**
-   ```bash
-   pnpm run dev
-   ```
+After running `npm run dev`, access:
+- **Frontend**: http://localhost:5173
+- **User Service API**: http://localhost:3001
+- **Job Service API**: http://localhost:3002
+- **Application Service API**: http://localhost:3005
 
-5. **Using Docker (Recommended)**
-   ```bash
-   docker-compose up --build
-   ```
+### 🐳 Alternative: Docker Setup
+
+```bash
+# Using Docker Compose
+npm run docker:dev
+
+# Stop Docker services
+npm run docker:down
+```
+
+### 📊 Monitor Services
+
+```bash
+# View all logs
+npm run logs
+
+# View specific service logs
+npm run logs:user      # User service
+npm run logs:job       # Job service
+npm run logs:app       # Application service
+npm run logs:frontend  # Frontend
+
+# Stop all services
+npm run stop
+```
 
 ## 🎨 Design System & Brand Guidelines
 

@@ -110,3 +110,26 @@ CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_user_type ON users(user_type);
 CREATE INDEX IF NOT EXISTS idx_users_is_active ON users(is_active);
 CREATE INDEX IF NOT EXISTS idx_job_seeker_profiles_user_id ON job_seeker_profiles(user_id);
+
+-- Add health check functionality
+\c sparkapply_dev;
+
+-- Create a simple health check table
+CREATE TABLE IF NOT EXISTS health_check (
+    id SERIAL PRIMARY KEY,
+    service_name VARCHAR(100) NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'healthy',
+    last_check TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Insert initial health check records
+INSERT INTO health_check (service_name, status) VALUES 
+    ('user-service', 'healthy'),
+    ('job-service', 'healthy'),
+    ('application-service', 'healthy'),
+    ('database-init', 'completed')
+ON CONFLICT DO NOTHING;
+
+-- Grant additional permissions for health checks
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO sparkapply;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO sparkapply;

@@ -7,7 +7,8 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "pnpm run --parallel dev",
+    "dev": "./scripts/start-dev.sh",
+    "dev:pnpm": "pnpm run --parallel dev",
     "build": "pnpm run --recursive build",
     "build:frontend": "pnpm --filter web build",
     "build:backend": "pnpm --filter user-service build",
@@ -22,7 +23,16 @@
     "format:check": "pnpm run --recursive format:check",
     "clean": "pnpm run --recursive clean && rm -rf node_modules",
     "setup": "pnpm install && pnpm run --recursive setup",
-    "start": "pnpm run --parallel start"
+    "start": "./scripts/start-dev.sh",
+    "stop": "pkill -f 'npm run dev' || true",
+    "docker:dev": "docker compose -f docker-compose.dev.yml up --build",
+    "docker:prod": "docker compose -f docker-compose.prod.yml up --build",
+    "docker:down": "docker compose -f docker-compose.dev.yml down --remove-orphans",
+    "logs": "tail -f logs/*.log",
+    "logs:user": "tail -f logs/user-service.log",
+    "logs:job": "tail -f logs/job-service.log",
+    "logs:app": "tail -f logs/application-service.log",
+    "logs:frontend": "tail -f logs/frontend.log"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
