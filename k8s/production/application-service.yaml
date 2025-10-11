@@ -1,0 +1,131 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: application-service
+  namespace: sparkapply-prod
+  labels:
+    app: application-service
+    version: "${IMAGE_TAG}"
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: application-service
+  template:
+    metadata:
+      labels:
+        app: application-service
+        version: "${IMAGE_TAG}"
+    spec:
+      containers:
+      - name: application-service
+        image: ghcr.io/frostlab63/sparkapply/application-service:${IMAGE_TAG}
+        ports:
+        - containerPort: 3005
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: PORT
+          value: "3005"
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: sparkapply-secrets
+              key: database-url
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: sparkapply-secrets
+              key: redis-url
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: sparkapply-secrets
+              key: jwt-secret
+        - name: USER_SERVICE_URL
+          value: "http://user-service:3001"
+        - name: JOB_SERVICE_URL
+          value: "http://job-service:3002"
+        - name: ENABLE_NOTIFICATIONS
+          value: "true"
+        - name: ENABLE_DOCUMENT_PROCESSING
+          value: "true"
+        - name: ENABLE_INTERVIEW_SCHEDULING
+          value: "true"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3005
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3005
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        volumeMounts:
+        - name: upload-storage
+          mountPath: /app/uploads
+      volumes:
+      - name: upload-storage
+        persistentVolumeClaim:
+          claimName: sparkapply-uploads
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: application-service
+  namespace: sparkapply-prod
+  labels:
+    app: application-service
+spec:
+  selector:
+    app: application-service
+  ports:
+  - port: 3005
+    targetPort: 3005
+    protocol: TCP
+  type: ClusterIP
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: application-service-hpa
+  namespace: sparkapply-prod
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: application-service
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80

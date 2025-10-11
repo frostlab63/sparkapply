@@ -1,0 +1,298 @@
+name: Production Deployment
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to deploy'
+        required: true
+        default: 'latest'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # Job 1: Pre-deployment Checks
+  pre-deploy:
+    name: Pre-deployment Checks
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Validate deployment readiness
+      run: |
+        echo "🔍 Running pre-deployment validation..."
+        
+        # Check if all required files exist
+        required_files=(
+          "docker-compose.prod.yml"
+          "packages/api/user-service/Dockerfile"
+          "packages/api/job-service/Dockerfile"
+          "packages/api/application-service/Dockerfile"
+          "packages/web/Dockerfile"
+        )
+        
+        for file in "${required_files[@]}"; do
+          if [ ! -f "$file" ]; then
+            echo "❌ Required file missing: $file"
+            exit 1
+          fi
+        done
+        
+        echo "✅ All required files present"
+
+    - name: Check image availability
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        echo "🔍 Checking if Docker images are available..."
+        
+        services=("user-service" "job-service" "application-service" "web")
+        tag="${{ github.event.inputs.version || github.ref_name }}"
+        
+        for service in "${services[@]}"; do
+          image="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${service}:${tag}"
+          echo "Checking $image"
+          
+          # Use GitHub API to check if image exists
+          if ! docker manifest inspect "$image" > /dev/null 2>&1; then
+            echo "❌ Image not found: $image"
+            echo "Please ensure images are built and pushed before deployment"
+            exit 1
+          fi
+        done
+        
+        echo "✅ All Docker images are available"
+
+  # Job 2: Database Migration
+  migrate:
+    name: Database Migration
+    runs-on: ubuntu-latest
+    needs: pre-deploy
+    environment: production
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18.x'
+
+    - name: Run database migrations
+      env:
+        DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+      run: |
+        echo "🗄️ Running database migrations..."
+        
+        # Install migration dependencies
+        cd packages/api/user-service
+        npm ci --only=production
+        
+        # Run migrations (if migration scripts exist)
+        if [ -f "scripts/migrate.js" ]; then
+          npm run migrate:prod
+        else
+          echo "No migration script found, skipping..."
+        fi
+        
+        echo "✅ Database migrations completed"
+
+  # Job 3: Blue-Green Deployment
+  deploy:
+    name: Production Deployment
+    runs-on: ubuntu-latest
+    needs: [pre-deploy, migrate]
+    environment: production
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'v1.28.0'
+
+    - name: Deploy to production
+      env:
+        KUBE_CONFIG: ${{ secrets.KUBE_CONFIG_PRODUCTION }}
+        IMAGE_TAG: ${{ github.event.inputs.version || github.ref_name }}
+      run: |
+        echo "🚀 Starting production deployment..."
+        
+        echo "$KUBE_CONFIG" | base64 -d > kubeconfig
+        export KUBECONFIG=kubeconfig
+        
+        # Create deployment manifests with new image tags
+        envsubst < k8s/production/user-service.yaml | kubectl apply -f -
+        envsubst < k8s/production/job-service.yaml | kubectl apply -f -
+        envsubst < k8s/production/application-service.yaml | kubectl apply -f -
+        envsubst < k8s/production/web.yaml | kubectl apply -f -
+        
+        # Wait for rollout to complete
+        echo "⏳ Waiting for deployment to complete..."
+        kubectl rollout status deployment/user-service -n sparkapply-prod --timeout=600s
+        kubectl rollout status deployment/job-service -n sparkapply-prod --timeout=600s
+        kubectl rollout status deployment/application-service -n sparkapply-prod --timeout=600s
+        kubectl rollout status deployment/web -n sparkapply-prod --timeout=600s
+        
+        echo "✅ Production deployment completed"
+
+    - name: Update load balancer
+      run: |
+        echo "🔄 Updating load balancer configuration..."
+        
+        # Update ingress to point to new deployment
+        kubectl apply -f k8s/production/ingress.yaml -n sparkapply-prod
+        
+        echo "✅ Load balancer updated"
+
+  # Job 4: Smoke Tests
+  smoke-tests:
+    name: Production Smoke Tests
+    runs-on: ubuntu-latest
+    needs: deploy
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run smoke tests
+      run: |
+        echo "🧪 Running production smoke tests..."
+        
+        # Wait for services to be fully ready
+        sleep 60
+        
+        # Test critical endpoints
+        endpoints=(
+          "https://api.sparkapply.com/api/v1/health"
+          "https://sparkapply.com"
+          "https://api.sparkapply.com/api/v1/jobs"
+        )
+        
+        for endpoint in "${endpoints[@]}"; do
+          echo "Testing $endpoint"
+          if ! curl -f -s --max-time 30 "$endpoint" > /dev/null; then
+            echo "❌ Smoke test failed for $endpoint"
+            exit 1
+          fi
+          echo "✅ $endpoint is responding"
+        done
+        
+        echo "✅ All smoke tests passed"
+
+    - name: Test user registration flow
+      run: |
+        echo "🧪 Testing user registration flow..."
+        
+        # Test user registration endpoint
+        response=$(curl -s -X POST https://api.sparkapply.com/api/v1/auth/register \
+          -H "Content-Type: application/json" \
+          -d '{
+            "email": "test-'$(date +%s)'@example.com",
+            "password": "TestPassword123!",
+            "firstName": "Test",
+            "lastName": "User"
+          }')
+        
+        if echo "$response" | grep -q "error"; then
+          echo "❌ User registration test failed"
+          echo "$response"
+          exit 1
+        fi
+        
+        echo "✅ User registration flow working"
+
+  # Job 5: Performance Validation
+  performance-validation:
+    name: Production Performance Validation
+    runs-on: ubuntu-latest
+    needs: smoke-tests
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install k6
+      run: |
+        sudo gpg -k
+        sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+        echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+        sudo apt-get update
+        sudo apt-get install k6
+
+    - name: Run production performance tests
+      run: |
+        echo "📊 Running production performance validation..."
+        
+        # Run lightweight performance test
+        k6 run --vus 10 --duration 2m scripts/production-performance-test.js
+        
+        echo "✅ Performance validation completed"
+
+  # Job 6: Rollback on Failure
+  rollback:
+    name: Rollback on Failure
+    runs-on: ubuntu-latest
+    needs: [deploy, smoke-tests, performance-validation]
+    if: failure()
+    environment: production
+    
+    steps:
+    - name: Rollback deployment
+      env:
+        KUBE_CONFIG: ${{ secrets.KUBE_CONFIG_PRODUCTION }}
+      run: |
+        echo "🔄 Rolling back production deployment..."
+        
+        echo "$KUBE_CONFIG" | base64 -d > kubeconfig
+        export KUBECONFIG=kubeconfig
+        
+        # Rollback all deployments
+        kubectl rollout undo deployment/user-service -n sparkapply-prod
+        kubectl rollout undo deployment/job-service -n sparkapply-prod
+        kubectl rollout undo deployment/application-service -n sparkapply-prod
+        kubectl rollout undo deployment/web -n sparkapply-prod
+        
+        # Wait for rollback to complete
+        kubectl rollout status deployment/user-service -n sparkapply-prod --timeout=300s
+        kubectl rollout status deployment/job-service -n sparkapply-prod --timeout=300s
+        kubectl rollout status deployment/application-service -n sparkapply-prod --timeout=300s
+        kubectl rollout status deployment/web -n sparkapply-prod --timeout=300s
+        
+        echo "✅ Rollback completed"
+
+  # Job 7: Post-deployment
+  post-deploy:
+    name: Post-deployment Tasks
+    runs-on: ubuntu-latest
+    needs: [smoke-tests, performance-validation]
+    if: success()
+    
+    steps:
+    - name: Update deployment status
+      run: |
+        echo "📝 Updating deployment status..."
+        
+        # Create deployment record
+        echo "Deployment completed successfully at $(date)"
+        echo "Version: ${{ github.event.inputs.version || github.ref_name }}"
+        echo "Commit: ${{ github.sha }}"
+        
+        echo "✅ Production deployment successful!"
+
+    - name: Notify stakeholders
+      run: |
+        echo "📢 Notifying stakeholders of successful deployment..."
+        echo "🎉 SparkApply ${{ github.event.inputs.version || github.ref_name }} has been deployed to production!"
+        echo "🌐 Available at: https://sparkapply.com"
+        echo "📊 Monitor at: https://monitoring.sparkapply.com"

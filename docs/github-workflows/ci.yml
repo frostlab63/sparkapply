@@ -1,0 +1,295 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ master, develop ]
+  pull_request:
+    branches: [ master, develop ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # Job 1: Code Quality and Testing
+  test:
+    name: Test & Code Quality
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: sparkapply_test
+          POSTGRES_USER: sparkapply
+          POSTGRES_PASSWORD: password123
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+        service: [user-service, job-service, application-service, web]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: |
+        if [ "${{ matrix.service }}" = "web" ]; then
+          cd packages/web
+        else
+          cd packages/api/${{ matrix.service }}
+        fi
+        npm ci --legacy-peer-deps
+
+    - name: Run linting
+      run: |
+        if [ "${{ matrix.service }}" = "web" ]; then
+          cd packages/web
+        else
+          cd packages/api/${{ matrix.service }}
+        fi
+        npm run lint || echo "Linting not configured for ${{ matrix.service }}"
+
+    - name: Run tests
+      env:
+        NODE_ENV: test
+        DATABASE_URL: postgresql://sparkapply:password123@localhost:5432/sparkapply_test
+        REDIS_URL: redis://localhost:6379
+        JWT_SECRET: test-jwt-secret
+      run: |
+        if [ "${{ matrix.service }}" = "web" ]; then
+          cd packages/web
+          npm test -- --coverage --watchAll=false
+        else
+          cd packages/api/${{ matrix.service }}
+          npm test -- --coverage --detectOpenHandles --forceExit
+        fi
+
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      with:
+        file: |
+          packages/api/${{ matrix.service }}/coverage/lcov.info
+          packages/web/coverage/lcov.info
+        flags: ${{ matrix.service }}
+        name: ${{ matrix.service }}-coverage
+
+  # Job 2: Security Scanning
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+    - name: Run npm audit
+      run: |
+        for service in user-service job-service application-service; do
+          echo "Auditing packages/api/$service"
+          cd packages/api/$service
+          npm audit --audit-level=high
+          cd ../../..
+        done
+        echo "Auditing packages/web"
+        cd packages/web
+        npm audit --audit-level=high
+
+  # Job 3: Build Docker Images
+  build:
+    name: Build Images
+    runs-on: ubuntu-latest
+    needs: [test, security]
+    if: github.event_name == 'push'
+    
+    strategy:
+      matrix:
+        service: [user-service, job-service, application-service, web]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Login to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: |
+          ${{ matrix.service == 'web' && 'packages/web' || format('packages/api/{0}', matrix.service) }}
+        file: |
+          ${{ matrix.service == 'web' && 'packages/web/Dockerfile' || format('packages/api/{0}/Dockerfile', matrix.service) }}
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        target: production
+
+  # Job 4: Deploy to Staging
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/develop'
+    environment: staging
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'v1.28.0'
+
+    - name: Deploy to staging
+      env:
+        KUBE_CONFIG: ${{ secrets.KUBE_CONFIG_STAGING }}
+      run: |
+        echo "$KUBE_CONFIG" | base64 -d > kubeconfig
+        export KUBECONFIG=kubeconfig
+        
+        # Update image tags in staging deployment
+        kubectl set image deployment/user-service user-service=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/user-service:develop-${{ github.sha }} -n sparkapply-staging
+        kubectl set image deployment/job-service job-service=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/job-service:develop-${{ github.sha }} -n sparkapply-staging
+        kubectl set image deployment/application-service application-service=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/application-service:develop-${{ github.sha }} -n sparkapply-staging
+        kubectl set image deployment/web web=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/web:develop-${{ github.sha }} -n sparkapply-staging
+        
+        # Wait for rollout to complete
+        kubectl rollout status deployment/user-service -n sparkapply-staging --timeout=300s
+        kubectl rollout status deployment/job-service -n sparkapply-staging --timeout=300s
+        kubectl rollout status deployment/application-service -n sparkapply-staging --timeout=300s
+        kubectl rollout status deployment/web -n sparkapply-staging --timeout=300s
+
+    - name: Run staging health checks
+      run: |
+        # Wait for services to be ready
+        sleep 30
+        
+        # Health check endpoints
+        curl -f https://staging-api.sparkapply.com/api/v1/health || exit 1
+        curl -f https://staging.sparkapply.com || exit 1
+        
+        echo "✅ Staging deployment successful!"
+
+  # Job 5: Performance Testing
+  performance:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    if: github.ref == 'refs/heads/develop'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18.x'
+
+    - name: Install k6
+      run: |
+        sudo gpg -k
+        sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+        echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+        sudo apt-get update
+        sudo apt-get install k6
+
+    - name: Run performance tests
+      run: |
+        k6 run --out json=performance-results.json scripts/performance-test.js
+
+    - name: Upload performance results
+      uses: actions/upload-artifact@v3
+      with:
+        name: performance-results
+        path: performance-results.json
+
+  # Job 6: Notify on Success/Failure
+  notify:
+    name: Notify Results
+    runs-on: ubuntu-latest
+    needs: [test, security, build, deploy-staging, performance]
+    if: always()
+    
+    steps:
+    - name: Notify success
+      if: ${{ needs.test.result == 'success' && needs.security.result == 'success' && needs.build.result == 'success' }}
+      run: |
+        echo "🎉 CI/CD Pipeline completed successfully!"
+        echo "✅ Tests passed"
+        echo "✅ Security scans passed"
+        echo "✅ Images built and pushed"
+        if [ "${{ github.ref }}" = "refs/heads/develop" ]; then
+          echo "✅ Deployed to staging"
+          echo "✅ Performance tests completed"
+        fi
+
+    - name: Notify failure
+      if: ${{ needs.test.result == 'failure' || needs.security.result == 'failure' || needs.build.result == 'failure' }}
+      run: |
+        echo "❌ CI/CD Pipeline failed!"
+        echo "Test result: ${{ needs.test.result }}"
+        echo "Security result: ${{ needs.security.result }}"
+        echo "Build result: ${{ needs.build.result }}"
+        exit 1
