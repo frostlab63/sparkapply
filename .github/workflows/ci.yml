@@ -11,6 +11,7 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
+  # Job 1: Code Quality and Testing
   test:
     name: Test & Code Quality
     runs-on: ubuntu-latest
@@ -49,11 +50,16 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v2
+      with:
+        version: 8
+
     - name: Setup Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
-        cache: 'npm'
+        cache: 'pnpm'
 
     - name: Install dependencies
       run: |
@@ -62,7 +68,7 @@ jobs:
         else
           cd packages/api/${{ matrix.service }}
         fi
-        npm ci --legacy-peer-deps
+        pnpm install --frozen-lockfile
 
     - name: Run tests
       env:
@@ -73,12 +79,13 @@ jobs:
       run: |
         if [ "${{ matrix.service }}" = "web" ]; then
           cd packages/web
-          npm test -- --coverage --watchAll=false || echo "Tests not configured"
+          pnpm test -- --coverage --watchAll=false || echo "Tests not configured for web"
         else
           cd packages/api/${{ matrix.service }}
-          npm test -- --coverage --detectOpenHandles --forceExit || echo "Tests not configured"
+          pnpm test -- --coverage --detectOpenHandles --forceExit || echo "Tests not configured for ${{ matrix.service }}"
         fi
 
+  # Job 2: Build Docker Images
   build:
     name: Build Images
     runs-on: ubuntu-latest
