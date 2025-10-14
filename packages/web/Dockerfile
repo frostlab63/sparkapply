@@ -1,36 +1,39 @@
 # Multi-stage Dockerfile for Frontend (React/Vite)
 # Supports development, testing, and production environments
 
-# Base stage with Node.js
+# Base stage with Node.js and pnpm
 FROM node:18-alpine AS base
 WORKDIR /app
 RUN apk add --no-cache dumb-init
-COPY package*.json ./
-RUN npm ci --only=production && npm cache clean --force
+RUN npm install -g pnpm@8
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile --prod && pnpm store prune
 
 # Development stage
 FROM node:18-alpine AS development
 WORKDIR /app
 RUN apk add --no-cache dumb-init
-COPY package*.json ./
-RUN npm ci
+RUN npm install -g pnpm@8
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
 COPY . .
 EXPOSE 5173
 USER node
-CMD ["dumb-init", "npm", "run", "dev", "--", "--host", "0.0.0.0"]
+CMD ["dumb-init", "pnpm", "run", "dev", "--", "--host", "0.0.0.0"]
 
 # Testing stage
 FROM development AS testing
-RUN npm run test:ci 2>/dev/null || npm test 2>/dev/null || echo "No test script found"
-CMD ["npm", "test"]
+RUN pnpm run test:ci 2>/dev/null || pnpm test 2>/dev/null || echo "No test script found"
+CMD ["pnpm", "test"]
 
 # Production build stage
 FROM node:18-alpine AS production-build
 WORKDIR /app
-COPY package*.json ./
-RUN npm ci
+RUN npm install -g pnpm@8
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
 COPY . .
-RUN npm run build
+RUN pnpm run build
 
 # Production stage with Nginx
 FROM nginx:alpine AS production

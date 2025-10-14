@@ -1,33 +1,35 @@
 # Multi-stage Dockerfile for User Service
 # Supports development, testing, and production environments
 
-# Base stage with Node.js
+# Base stage with Node.js and pnpm
 FROM node:18-alpine AS base
 WORKDIR /app
 RUN apk add --no-cache dumb-init
-COPY package*.json ./
-RUN npm ci --only=production && npm cache clean --force
+RUN npm install -g pnpm@8
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile --prod && pnpm store prune
 
 # Development stage
 FROM node:18-alpine AS development
 WORKDIR /app
 RUN apk add --no-cache dumb-init
-COPY package*.json ./
-RUN npm ci
+RUN npm install -g pnpm@8
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
 COPY . .
 EXPOSE 3001
 USER node
-CMD ["dumb-init", "npm", "run", "dev"]
+CMD ["dumb-init", "pnpm", "run", "dev"]
 
 # Testing stage
 FROM development AS testing
-RUN npm run test:ci
-CMD ["npm", "test"]
+RUN pnpm run test:ci
+CMD ["pnpm", "test"]
 
 # Production build stage
 FROM base AS production-build
 COPY . .
-RUN npm run build 2>/dev/null || echo "No build script found, using source files"
+RUN pnpm run build 2>/dev/null || echo "No build script found, using source files"
 
 # Production stage
 FROM node:18-alpine AS production
@@ -39,4 +41,4 @@ COPY --from=base --chown=nodejs:nodejs /app/node_modules ./node_modules
 COPY --from=production-build --chown=nodejs:nodejs /app .
 EXPOSE 3001
 USER nodejs
-CMD ["dumb-init", "npm", "start"]
+CMD ["dumb-init", "pnpm", "start"]
