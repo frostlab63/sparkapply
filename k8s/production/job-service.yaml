@@ -5,9 +5,9 @@ metadata:
   namespace: sparkapply-prod
   labels:
     app: job-service
-    version: "${IMAGE_TAG}"
+    version: "${IMAGE_TAG}" # Dynamically set by CI/CD pipeline
 spec:
-  replicas: 2
+  replicas: 2 # Start with 2 replicas, HPA will scale up as needed
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -20,59 +20,74 @@ spec:
     metadata:
       labels:
         app: job-service
-        version: "${IMAGE_TAG}"
+        version: "${IMAGE_TAG}" # Dynamically set by CI/CD pipeline
     spec:
       containers:
       - name: job-service
-        image: ghcr.io/frostlab63/sparkapply/job-service:${IMAGE_TAG}
+        image: ghcr.io/frostlab63/sparkapply/job-service:${IMAGE_TAG} # Image built by CI/CD
         ports:
         - containerPort: 3002
         env:
-        - name: NODE_ENV
-          value: "production"
-        - name: PORT
-          value: "3002"
-        - name: DATABASE_URL
+        - name: NODE_ENV # Passed from ConfigMap
+          valueFrom:
+            configMapKeyRef:
+              name: sparkapply-config
+              key: NODE_ENV
+        - name: PORT # Passed from ConfigMap
+          valueFrom:
+            configMapKeyRef:
+              name: sparkapply-config
+              key: PORT_JOB_SERVICE # Define a specific port key in ConfigMap
+        - name: DATABASE_URL # Passed from Secret
+
           valueFrom:
             secretKeyRef:
               name: sparkapply-secrets
               key: database-url
-        - name: REDIS_URL
+        - name: REDIS_URL # Passed from Secret
+
           valueFrom:
             secretKeyRef:
               name: sparkapply-secrets
               key: redis-url
-        - name: JWT_SECRET
+        - name: JWT_SECRET # Passed from Secret
+
           valueFrom:
             secretKeyRef:
               name: sparkapply-secrets
               key: jwt-secret
-        - name: USER_SERVICE_URL
+        - name: USER_SERVICE_URL # Internal Kubernetes service URL
           value: "http://user-service:3001"
-        - name: ENABLE_JOB_SCRAPING
-          value: "true"
-        - name: SCRAPING_INTERVAL_HOURS
-          value: "6"
+        - name: ENABLE_JOB_SCRAPING # Passed from ConfigMap
+          valueFrom:
+            configMapKeyRef:
+              name: sparkapply-config
+              key: ENABLE_JOB_SCRAPING
+        - name: SCRAPING_INTERVAL_HOURS # Passed from ConfigMap
+          valueFrom:
+            configMapKeyRef:
+              name: sparkapply-config
+              key: SCRAPING_INTERVAL_HOURS
         resources:
           requests:
-            memory: "512Mi"
-            cpu: "250m"
+            memory: "400Mi" # Adjusted initial request
+            cpu: "200m"  # Adjusted initial request
           limits:
-            memory: "1Gi"
-            cpu: "500m"
+            memory: "800Mi" # Adjusted limit
+            cpu: "400m"  # Adjusted limit
         livenessProbe:
           httpGet:
             path: /health
             port: 3002
-          initialDelaySeconds: 30
-          periodSeconds: 10
+          initialDelaySeconds: 60 # Increased initial delay for service startup
+          periodSeconds: 15 # Increased period for less frequent checks
           timeoutSeconds: 5
           failureThreshold: 3
         readinessProbe:
           httpGet:
             path: /health
             port: 3002
-          initialDelaySeconds: 5
+          initialDelaySeconds: 10 # Adjusted initial delay
           periodSeconds: 5
           timeoutSeconds: 3
           failureThreshold: 3
@@ -103,7 +118,7 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: job-service
-  minReplicas: 2
+  minReplicas: 2 # Matches initial deployment replicas
   maxReplicas: 8
   metrics:
   - type: Resource
@@ -111,10 +126,10 @@ spec:
       name: cpu
       target:
         type: Utilization
-        averageUtilization: 70
+        averageUtilization: 60 # Scale up earlier on CPU
   - type: Resource
     resource:
       name: memory
       target:
         type: Utilization
-        averageUtilization: 80
+        averageUtilization: 70 # Scale up earlier on Memory

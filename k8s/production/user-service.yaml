@@ -5,9 +5,9 @@ metadata:
   namespace: sparkapply-prod
   labels:
     app: user-service
-    version: "${IMAGE_TAG}"
+    version: "${IMAGE_TAG}" # Dynamically set by CI/CD pipeline
 spec:
-  replicas: 3
+  replicas: 2 # Start with 2 replicas, HPA will scale up as needed
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -20,58 +20,68 @@ spec:
     metadata:
       labels:
         app: user-service
-        version: "${IMAGE_TAG}"
+        version: "${IMAGE_TAG}" # Dynamically set by CI/CD pipeline
     spec:
       containers:
       - name: user-service
-        image: ghcr.io/frostlab63/sparkapply/user-service:${IMAGE_TAG}
+        image: ghcr.io/frostlab63/sparkapply/user-service:${IMAGE_TAG} # Image built by CI/CD
         ports:
         - containerPort: 3001
         env:
-        - name: NODE_ENV
-          value: "production"
-        - name: PORT
-          value: "3001"
-        - name: DATABASE_URL
+        - name: NODE_ENV # Passed from ConfigMap
+          valueFrom:
+            configMapKeyRef:
+              name: sparkapply-config
+              key: NODE_ENV
+        - name: PORT # Passed from ConfigMap
+          valueFrom:
+            configMapKeyRef:
+              name: sparkapply-config
+              key: PORT_USER_SERVICE # Define a specific port key in ConfigMap
+        - name: DATABASE_URL # Passed from Secret
+
           valueFrom:
             secretKeyRef:
               name: sparkapply-secrets
               key: database-url
-        - name: REDIS_URL
+        - name: REDIS_URL # Passed from Secret
+
           valueFrom:
             secretKeyRef:
               name: sparkapply-secrets
               key: redis-url
-        - name: JWT_SECRET
+        - name: JWT_SECRET # Passed from Secret
+
           valueFrom:
             secretKeyRef:
               name: sparkapply-secrets
               key: jwt-secret
-        - name: JWT_REFRESH_SECRET
+        - name: JWT_REFRESH_SECRET # Passed from Secret
+
           valueFrom:
             secretKeyRef:
               name: sparkapply-secrets
               key: jwt-refresh-secret
         resources:
           requests:
-            memory: "256Mi"
-            cpu: "250m"
+            memory: "200Mi" # Reduced initial request
+            cpu: "150m"  # Reduced initial request
           limits:
-            memory: "512Mi"
-            cpu: "500m"
+            memory: "400Mi" # Adjusted limit
+            cpu: "300m"  # Adjusted limit
         livenessProbe:
           httpGet:
             path: /api/v1/health
             port: 3001
-          initialDelaySeconds: 30
-          periodSeconds: 10
+          initialDelaySeconds: 60 # Increased initial delay for service startup
+          periodSeconds: 15 # Increased period for less frequent checks
           timeoutSeconds: 5
           failureThreshold: 3
         readinessProbe:
           httpGet:
             path: /api/v1/health
             port: 3001
-          initialDelaySeconds: 5
+          initialDelaySeconds: 10 # Adjusted initial delay
           periodSeconds: 5
           timeoutSeconds: 3
           failureThreshold: 3
@@ -102,7 +112,7 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: user-service
-  minReplicas: 3
+  minReplicas: 2 # Matches initial deployment replicas
   maxReplicas: 10
   metrics:
   - type: Resource
@@ -110,10 +120,10 @@ spec:
       name: cpu
       target:
         type: Utilization
-        averageUtilization: 70
+        averageUtilization: 60 # Scale up earlier on CPU
   - type: Resource
     resource:
       name: memory
       target:
         type: Utilization
-        averageUtilization: 80
+        averageUtilization: 70 # Scale up earlier on Memory

@@ -5,9 +5,9 @@ metadata:
   namespace: sparkapply-prod
   labels:
     app: web
-    version: "${IMAGE_TAG}"
+    version: "${IMAGE_TAG}" # Dynamically set by CI/CD pipeline
 spec:
-  replicas: 3
+  replicas: 2 # Start with 2 replicas, HPA will scale up as needed
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -20,28 +20,31 @@ spec:
     metadata:
       labels:
         app: web
-        version: "${IMAGE_TAG}"
+        version: "${IMAGE_TAG}" # Dynamically set by CI/CD pipeline
     spec:
       containers:
       - name: web
-        image: ghcr.io/frostlab63/sparkapply/web:${IMAGE_TAG}
+        image: ghcr.io/frostlab63/sparkapply/web:${IMAGE_TAG} # Image built by CI/CD
         ports:
         - containerPort: 80
         env:
-        - name: NODE_ENV
-          value: "production"
+        - name: NODE_ENV # Passed from ConfigMap
+          valueFrom:
+            configMapKeyRef:
+              name: sparkapply-config
+              key: NODE_ENV
         resources:
           requests:
-            memory: "128Mi"
-            cpu: "100m"
+            memory: "100Mi" # Adjusted initial request
+            cpu: "75m"  # Adjusted initial request
           limits:
-            memory: "256Mi"
-            cpu: "200m"
+            memory: "200Mi" # Adjusted limit
+            cpu: "150m"  # Adjusted limit
         livenessProbe:
           httpGet:
             path: /
             port: 80
-          initialDelaySeconds: 30
+          initialDelaySeconds: 45 # Increased initial delay for service startup
           periodSeconds: 10
           timeoutSeconds: 5
           failureThreshold: 3
@@ -49,7 +52,7 @@ spec:
           httpGet:
             path: /
             port: 80
-          initialDelaySeconds: 5
+          initialDelaySeconds: 10 # Adjusted initial delay
           periodSeconds: 5
           timeoutSeconds: 3
           failureThreshold: 3
@@ -80,7 +83,7 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: web
-  minReplicas: 3
+  minReplicas: 2 # Matches initial deployment replicas
   maxReplicas: 12
   metrics:
   - type: Resource
@@ -88,10 +91,10 @@ spec:
       name: cpu
       target:
         type: Utilization
-        averageUtilization: 70
+        averageUtilization: 60 # Scale up earlier on CPU
   - type: Resource
     resource:
       name: memory
       target:
         type: Utilization
-        averageUtilization: 80
+        averageUtilization: 70 # Scale up earlier on Memory
