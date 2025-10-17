@@ -1,0 +1,128 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: sparkapply-prod
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-to-web
+  namespace: sparkapply-prod
+spec:
+  podSelector:
+    matchLabels:
+      app: web
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              app: ingress-nginx # Assuming ingress-nginx controller
+    - ports:
+        - protocol: TCP
+          port: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-internal-api-access
+  namespace: sparkapply-prod
+spec:
+  podSelector:
+    matchLabels:
+      app: user-service # Or job-service, application-service
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: web # Allow web to talk to API services
+        - podSelector:
+            matchLabels:
+              app: job-service # Allow job-service to talk to user-service if needed
+        - podSelector:
+            matchLabels:
+              app: application-service # Allow application-service to talk to other API services
+    - ports:
+        - protocol: TCP
+          port: 3001 # User-service port
+        - protocol: TCP
+          port: 3002 # Job-service port
+        - protocol: TCP
+          port: 3005 # Application-service port
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-egress-to-db-and-dns
+  namespace: sparkapply-prod
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: postgres # Assuming a postgres deployment with this label
+      ports:
+        - protocol: TCP
+          port: 5432
+    - to:
+        - podSelector:
+            matchLabels:
+              app: redis # Assuming a redis deployment with this label
+      ports:
+        - protocol: TCP
+          port: 6379
+    - ports:
+        - protocol: UDP
+          port: 53 # Allow DNS resolution
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0 # Allow external egress for image pulls, etc. (refine as needed)
+      ports:
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-prometheus-scrape
+  namespace: sparkapply-prod
+spec:
+  podSelector:
+    matchLabels:
+      app: prometheus
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector: {}
+      ports:
+        - protocol: TCP
+          port: 9090 # Prometheus can scrape itself
+        - protocol: TCP
+          port: 80
+        - protocol: TCP
+          port: 443
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0 # Allow Prometheus to reach external targets if needed
+      ports:
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 80
+
